@@ -1,8 +1,31 @@
+# -*- coding: utf-8 -*-
+#
+# This file is part of INSPIRE-MITMPROXY.
+# Copyright (C) 2018 CERN.
+#
+# INSPIRE is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# INSPIRE is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with INSPIRE. If not, see <http://www.gnu.org/licenses/>.
+#
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as an Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
+*config_local.py
 # C extensions
 *.so
 
@@ -45,6 +68,7 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.pytest_cache/
 
 # Translations
 *.mo
@@ -63,6 +87,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/_api/
 
 # PyBuilder
 target/
@@ -73,29 +98,57 @@ target/
 # pyenv
 .python-version
 
-# celery beat schedule file
-celerybeat-schedule
+# Eclipse/PyDev
+.project
+.pydevproject
 
-# SageMath parsed files
-*.sage.py
+# Git merge backup files
+*.orig
 
-# dotenv
-.env
+# Linux backup files
+*~
+
+# Mac folder attributes
+.DS_Store
+
+# Locally installed node modules
+node_modules
+
+# IntelliJ IDE
+.idea
+
+# Redis
+dump.rdb
+
+# KDevelop4
+.kdev4/
+*.kdev4
+*.kate-swp
+
+# Vim swapfiles
+.*.sw?
+
+# Selenium report
+assets
+selenium-report.html
 
 # virtualenv
 .venv
 venv/
 ENV/
 
-# Spyder project settings
-.spyderproject
-.spyproject
+# Rope project files
+.ropeproject/
 
-# Rope project settings
-.ropeproject
+# Twisted
+twistd.pid
 
-# mkdocs documentation
-/site
+# Build artifacts
+dbs/
+items/
 
-# mypy
-.mypy_cache/
+# editor upload folder
+inspirehep/modules/editor/temp/
+
+CHANGELOG
+AUTHORS
