@@ -35,6 +35,7 @@ install_requires = [
 ]
 
 tests_require = [
+    'autosemver~=0.0,>=0.5.3',
     'flake8~=3.0,>=3.5.0',
     'mitmproxy~=3.0,>=3.0.4',
     'pytest~=3.0,>=3.5.0',
