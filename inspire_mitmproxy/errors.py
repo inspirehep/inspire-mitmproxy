@@ -22,8 +22,16 @@
 
 """INSPIRE-MITMProxy Errors"""
 
+from .base_service import BaseService
+
 
 class NoServicesForRequest(Exception):
     def __init__(self, request: dict) -> None:
         message = "None of the registered services can handle this request: %s" % request
+        super().__init__(message)
+
+
+class RequestNotHandledInService(Exception):
+    def __init__(self, service: BaseService, request: dict):
+        message = "%s can't handle the request %s" % (service, request)
         super().__init__(message)

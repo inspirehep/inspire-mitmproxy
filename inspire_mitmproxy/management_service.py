@@ -22,11 +22,55 @@
 
 """Service used to orchestrate fake services."""
 
-from typing import List
+from autosemver import get_current_version
+from json import dumps as json_dumps
+from mitmproxy.net.http.status_codes import RESPONSES
+from os import getcwd
+from typing import List, Union
+from urllib.parse import urlparse
 
 from .base_service import BaseService
+from .errors import RequestNotHandledInService
 
 
 class ManagementService(BaseService):
     def __init__(self, services: List[BaseService]) -> None:
         self.services = services
+
+    def process_request(self, request: dict) -> dict:
+        parsed_url = urlparse(request['uri'])
+        path = parsed_url.path
+        method = request['method']
+
+        if path == '/services' and method == 'GET':
+            return self.build_response(200, self.get_services())
+        elif path == '/scenarios' and method == 'GET':
+            return self.build_response(201, self.get_scenarios())
+
+        raise RequestNotHandledInService(self, request)
+
+    def get_services(self) -> dict:
+        return {
+            idx: {
+                'class': type(service).__name__,
+                'service_hosts': service.SERVICE_HOSTS,
+            }
+            for idx, service in enumerate([self] + self.services)
+        }
+
+    def get_scenarios(self) -> dict:
+        return NotImplemented
+
+
+    def build_response(self, code: int, json_message: Union[dict, list]) -> dict:
+        return {
+            'status': {
+                'message': RESPONSES[code],
+                'code': code,
+            },
+            'body': json_dumps(json_message, indent=2),
+            'headers': {
+                'Content-Type': ['application/json'],
+                'Server': ['inspire-mitmproxy/' + get_current_version(getcwd())]
+            }
+        }

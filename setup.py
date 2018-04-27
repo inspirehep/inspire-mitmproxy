@@ -32,6 +32,7 @@ setup_requires = [
 ]
 
 install_requires = [
+    'autosemver~=0.0,>=0.5.3',
     'mitmproxy~=3.0,>=3.0.4',
 ]
 
