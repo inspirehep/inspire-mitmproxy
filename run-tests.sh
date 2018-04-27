@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ev
 # This file is part of INSPIRE-MITMPROXY.
 # Copyright (C) 2018 CERN.
 #
@@ -21,9 +21,14 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
-set -e
-
+echo "Running FLAKE8"
 flake8 inspire_mitmproxy tests entrypoint.py
+
+echo "Running MyPy"
+export MYPYPATH="${VIRTUAL_ENV}/lib/python3.6/site-packages/"
+mypy --follow-imports=silent .
+
+echo "Runnning PyTest"
 pytest --cov=inspire_mitmproxy \
     --cov-report=term-missing \
     --capture=sys \

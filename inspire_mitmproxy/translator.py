@@ -25,6 +25,7 @@
 from cgi import parse_header
 from mitmproxy.http import HTTPRequest, HTTPResponse
 from mitmproxy.net.http.headers import Headers
+from typing import Dict, List
 
 
 def request_to_dict(request: HTTPRequest) -> dict:
@@ -55,7 +56,7 @@ def dict_to_response(response: dict) -> HTTPResponse:
 
 
 def headers_to_dict(headers: Headers) -> dict:
-    header_dict = {}
+    header_dict: Dict[str, List[str]] = {}
 
     for key, value in headers.fields:
         key, value = key.decode('ascii'), value.decode('ascii')

@@ -23,7 +23,7 @@
 """Dispatcher forwards requests to Services."""
 
 from mitmproxy.http import HTTPFlow, HTTPResponse
-from typing import List
+from typing import List, cast
 
 from .base_service import BaseService
 from .errors import NoServicesForRequest
@@ -32,9 +32,9 @@ from .translator import request_to_dict, dict_to_response
 
 
 class Dispatcher:
-    def __init__(self, services: List[BaseService]):
+    def __init__(self, services: List[BaseService]) -> None:
         mgmt_service = ManagementService(services)
-        self.services = [mgmt_service] + services
+        self.services = [cast(BaseService, mgmt_service)] + services
 
     def process_request(self, request: dict) -> dict:
         """Perform operations and give response."""

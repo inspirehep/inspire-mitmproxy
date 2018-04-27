@@ -147,6 +147,9 @@ twistd.pid
 dbs/
 items/
 
+# MyPy
+.mypy_cache/
+
 # editor upload folder
 inspirehep/modules/editor/temp/
 
