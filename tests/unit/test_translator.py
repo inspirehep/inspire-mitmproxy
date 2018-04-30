@@ -28,9 +28,8 @@ from inspire_mitmproxy.translator import (
     dict_to_response,
     encoding_by_header,
     headers_to_dict,
-    request_to_dict,
+    request_to_dict
 )
-
 
 TEST_DICT_RESPONSE = {
     'status': {

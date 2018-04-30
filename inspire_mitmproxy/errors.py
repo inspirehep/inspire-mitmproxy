@@ -25,13 +25,26 @@
 from .base_service import BaseService
 
 
-class NoServicesForRequest(Exception):
+class HTTPError(Exception):
+    http_status_code = 500
+
+
+class NoServicesForRequest(HTTPError):
     def __init__(self, request: dict) -> None:
+        self.http_status_code = 404
         message = "None of the registered services can handle this request: %s" % request
         super().__init__(message)
 
 
-class RequestNotHandledInService(Exception):
-    def __init__(self, service: BaseService, request: dict):
+class RequestNotHandledInService(HTTPError):
+    def __init__(self, service: BaseService, request: dict) -> None:
+        self.http_status_code = 501
         message = "%s can't handle the request %s" % (service, request)
+        super().__init__(message)
+
+
+class InvalidRequest(HTTPError):
+    def __init__(self, service: BaseService, request: dict) -> None:
+        self.http_status_code = 400
+        message = "Invalid request %s for service %s" % (request, service)
         super().__init__(message)

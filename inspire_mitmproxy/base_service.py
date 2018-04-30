@@ -22,16 +22,22 @@
 
 """Base for fake services."""
 
+from typing import List
 from urllib.parse import urlparse
+
 
 class BaseService:
     """Mocked service base."""
-    SERVICE_HOSTS = []
+    SERVICE_HOSTS: List[str] = []
 
     def handles_request(self, request: dict) -> bool:
         """Can this service handle the request?"""
-        parsed_url = urlparse(request['uri'])
-        return parsed_url.netloc in self.SERVICE_HOSTS
+        try:
+            host = request['headers']['Host'][0]
+        except KeyError:
+            host = urlparse(request['uri']).netloc
+
+        return host in self.SERVICE_HOSTS
 
     def process_request(self, request: dict) -> dict:
         """Perform operations and give response."""

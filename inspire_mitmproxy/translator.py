@@ -23,9 +23,10 @@
 """Tools to convert between responses and request formats."""
 
 from cgi import parse_header
+from typing import Dict, List
+
 from mitmproxy.http import HTTPRequest, HTTPResponse
 from mitmproxy.net.http.headers import Headers
-from typing import Dict, List
 
 
 def request_to_dict(request: HTTPRequest) -> dict:

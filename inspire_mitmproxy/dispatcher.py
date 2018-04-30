@@ -22,13 +22,14 @@
 
 """Dispatcher forwards requests to Services."""
 
-from mitmproxy.http import HTTPFlow, HTTPResponse
 from typing import List, cast
+
+from mitmproxy.http import HTTPFlow, HTTPResponse
 
 from .base_service import BaseService
 from .errors import NoServicesForRequest
 from .management_service import ManagementService
-from .translator import request_to_dict, dict_to_response
+from .translator import dict_to_response, request_to_dict
 
 
 class Dispatcher:
@@ -49,15 +50,9 @@ class Dispatcher:
             request = request_to_dict(flow.request)
             response = dict_to_response(self.process_request(request))
             flow.response = response
-        except NoServicesForRequest as e:
-            flow.response = HTTPResponse.make(
-                status_code=404,
-                content=str(e),
-                headers={'Content-Type': 'text/plain'}
-            )
         except Exception as e:
             flow.response = HTTPResponse.make(
-                status_code=500,
+                status_code=getattr(e, 'http_status_code', 500),
                 content=str(e),
                 headers={'Content-Type': 'text/plain'}
             )
