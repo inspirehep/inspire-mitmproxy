@@ -22,10 +22,12 @@
 
 """The entrypoint for mitmproxy."""
 
+from inspire_mitmproxy.base_service import BaseService
 from inspire_mitmproxy.dispatcher import Dispatcher
+from typing import List
 
 
-service_list = [
+service_list: List[BaseService] = [
 
 ]
 

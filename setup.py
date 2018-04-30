@@ -23,6 +23,7 @@
 """INSPIRE MITMProxy for E2E Tests."""
 
 from setuptools import setup
+from typing import List
 
 readme = open('README.rst').read()
 
@@ -38,11 +39,12 @@ tests_require = [
     'autosemver~=0.0,>=0.5.3',
     'flake8~=3.0,>=3.5.0',
     'mitmproxy~=3.0,>=3.0.4',
+    'mypy~=0.0,>=0.590',
     'pytest~=3.0,>=3.5.0',
     'pytest-cov~=2.0,>=2.5.1',
 ]
 
-docs_require = []
+docs_require: List[str] = []
 
 extras_require = {
     'docs': docs_require,

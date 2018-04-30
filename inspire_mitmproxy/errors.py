@@ -24,6 +24,6 @@
 
 
 class NoServicesForRequest(Exception):
-    def __init__(self, request: dict):
+    def __init__(self, request: dict) -> None:
         message = "None of the registered services can handle this request: %s" % request
         super().__init__(message)

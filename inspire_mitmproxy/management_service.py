@@ -28,5 +28,5 @@ from .base_service import BaseService
 
 
 class ManagementService(BaseService):
-    def __init__(self, services: List[BaseService]):
+    def __init__(self, services: List[BaseService]) -> None:
         self.services = services
