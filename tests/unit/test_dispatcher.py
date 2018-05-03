@@ -23,14 +23,13 @@
 from pytest import fixture, mark, raises
 
 from inspire_mitmproxy.base_service import BaseService
-from inspire_mitmproxy.errors import NoServicesForRequest
 from inspire_mitmproxy.dispatcher import Dispatcher
+from inspire_mitmproxy.errors import NoServicesForRequest
 
 
 def make_test_service(url, message):
     class TestService(BaseService):
-        def handles_request(self, request: dict):
-            return request['uri'].startswith(url)
+        SERVICE_HOSTS = [url]
 
         def process_request(self, request: dict):
             return {
@@ -50,9 +49,9 @@ def make_test_service(url, message):
 @fixture(scope='module')
 def dispatcher():
     service_list = [
-        make_test_service('http://test-service-a.local', 'TestServiceA'),
-        make_test_service('http://test-service-b.local', 'TestServiceB'),
-        make_test_service('http://test-service-a.local', 'TestServiceC'),
+        make_test_service('test-service-a.local', 'TestServiceA'),
+        make_test_service('test-service-b.local', 'TestServiceB'),
+        make_test_service('test-service-a.local', 'TestServiceC'),
     ]
 
     return Dispatcher(services=service_list)

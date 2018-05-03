@@ -21,6 +21,14 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
+if [[ "$1" == "do_sort" ]]; then
+    echo "Sorting imports"
+    isort --recursive .
+else
+    echo "Dry-running isort to check for import ordering"
+    isort --check-only --recursive --diff .
+fi
+
 echo "Running FLAKE8"
 flake8 inspire_mitmproxy tests entrypoint.py
 
