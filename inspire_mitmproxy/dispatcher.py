@@ -22,18 +22,24 @@
 
 """Dispatcher forwards requests to Services."""
 
+from logging import getLogger
 from typing import List, cast
 
 from mitmproxy.http import HTTPFlow, HTTPResponse
 
 from .base_service import BaseService
-from .errors import NoServicesForRequest
+from .errors import DoNotIntercept, NoServicesForRequest
 from .management_service import ManagementService
 from .translator import dict_to_response, request_to_dict
+from .whitelist_service import WhitelistService
+
+logger = getLogger(__name__)
 
 
 class Dispatcher:
     def __init__(self, services: List[BaseService]) -> None:
+        whitelist_service = WhitelistService()
+        services = services + [cast(BaseService, whitelist_service)]
         mgmt_service = ManagementService(services)
         self.services = [cast(BaseService, mgmt_service)] + services
 
@@ -50,6 +56,9 @@ class Dispatcher:
             request = request_to_dict(flow.request)
             response = dict_to_response(self.process_request(request))
             flow.response = response
+        except DoNotIntercept as e:
+            # Let the request pass through, by not interrupting the flow, but log it
+            logger.warning(str(e))
         except Exception as e:
             flow.response = HTTPResponse.make(
                 status_code=getattr(e, 'http_status_code', 500),

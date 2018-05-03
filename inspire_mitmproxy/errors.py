@@ -48,3 +48,9 @@ class InvalidRequest(HTTPError):
         self.http_status_code = 400
         message = "Invalid request %s for service %s" % (request, service)
         super().__init__(message)
+
+
+class DoNotIntercept(Exception):
+    def __init__(self, service: BaseService, request: dict) -> None:
+        message = "Allow request %s (in %s) to pass through to the outside" % (request, service)
+        super().__init__(message)

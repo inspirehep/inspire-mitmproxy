@@ -79,12 +79,16 @@ def test_management_service_get_services(dispatcher):
     expected = {
         '0': {
             'class': 'ManagementService',
-            'service_hosts': ['mitm-manager.local']
+            'service_hosts': ['mitm-manager.local'],
         },
         '1': {
             'class': 'TestService',
-            'service_hosts': ['test-service.local']
-        }
+            'service_hosts': ['test-service.local'],
+        },
+        '2': {
+            'class': 'WhitelistService',
+            'service_hosts': ['indexer:9200', 'test-indexer:9200'],
+        },
     }
 
     assert result['status'] == {'code': 200, 'message': 'OK'}
