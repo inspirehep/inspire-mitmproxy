@@ -128,6 +128,9 @@ def test_management_service_put_config(management_service):
 
     assert expected == result
 
+    for service in management_service.services:
+        assert service.active_scenario == 'a scenario'
+
 
 @mark.parametrize(
     '_request',
@@ -152,6 +155,9 @@ def test_management_service_post_config(management_service):
     }
 
     assert expected == result
+
+    for service in management_service.services:
+        assert service.active_scenario == 'a scenario'
 
 
 def test_management_service_post_config_malformed_raises(management_service):

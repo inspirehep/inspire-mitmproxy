@@ -26,6 +26,7 @@ from json import loads as json_loads
 from os import environ
 from typing import List
 
+from mock import patch
 from pytest import fixture
 
 from inspire_mitmproxy.base_service import BaseService
@@ -61,8 +62,8 @@ def fake_scenarios_dir(tmpdir) -> str:
     scenario2_serviceB.join('2.yaml').ensure()
     scenario2_serviceB.join('3.yaml').ensure()
 
-    environ['SCENARIOS_PATH'] = scenarios.strpath
-    return scenarios.strpath
+    with patch.dict(environ, {'SCENARIOS_PATH': scenarios.strpath}):
+        yield
 
 
 def test_management_service_get_services(dispatcher):
@@ -87,7 +88,7 @@ def test_management_service_get_services(dispatcher):
         },
         '2': {
             'class': 'WhitelistService',
-            'service_hosts': ['indexer:9200', 'test-indexer:9200'],
+            'service_hosts': ['indexer', 'test-indexer'],
         },
     }
 

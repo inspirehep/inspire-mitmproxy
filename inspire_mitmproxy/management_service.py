@@ -62,12 +62,12 @@ class ManagementService(BaseService):
         elif path == '/config' and method == 'POST':
             return self.build_response(201, self.post_config(request))
 
-        raise RequestNotHandledInService(self, request)
+        raise RequestNotHandledInService(self.name, request)
 
     def get_services(self) -> dict:
         return {
             idx: {
-                'class': type(service).__name__,
+                'class': service.name,
                 'service_hosts': service.SERVICE_HOSTS,
             }
             for idx, service in enumerate([cast(BaseService, self)] + self.services)
@@ -97,14 +97,16 @@ class ManagementService(BaseService):
         try:
             config_update = json_loads(request['body'])
             self.config.update(config_update)
+            self.config_propagate()
         except (JSONDecodeError, ValueError):
-            raise InvalidRequest(self, request)
+            raise InvalidRequest(self.name, request)
 
     def post_config(self, request: dict):
         try:
             self.config = json_loads(request['body'])
+            self.config_propagate()
         except (JSONDecodeError):
-            raise InvalidRequest(self, request)
+            raise InvalidRequest(self.name, request)
 
     def build_response(self, code: int, json_message: Optional[Union[dict, list]]) -> dict:
         if json_message:
@@ -123,3 +125,8 @@ class ManagementService(BaseService):
                 'Server': ['inspire-mitmproxy/' + get_current_version(getcwd())]
             }
         }
+
+    def config_propagate(self):
+        """On change of config, propagate relevant information to services."""
+        for service in self.services:
+            service.active_scenario = self.config.get('active_scenario')
