@@ -22,15 +22,8 @@
 
 """The entrypoint for mitmproxy."""
 
-from typing import List
-
 from inspire_mitmproxy.dispatcher import Dispatcher
-from inspire_mitmproxy.services import ArxivService, BaseService
 
-service_list: List[BaseService] = [
-    ArxivService(),
-]
-
-dispatcher = Dispatcher(service_list)
+dispatcher = Dispatcher()
 
 addons = [dispatcher]

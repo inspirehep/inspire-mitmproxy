@@ -38,7 +38,7 @@ def service_a():
         SERVICE_HOSTS = ['host_a.local']
         active_scenario = None
 
-    return TestServiceA()
+    return TestServiceA
 
 
 @fixture
@@ -47,12 +47,13 @@ def service_b():
         SERVICE_HOSTS = ['host_b.local']
         active_scenario = None
 
-    return TestServiceB()
+    return TestServiceB
 
 
 @fixture(scope='function')
 def dispatcher(scenarios_dir, service_a, service_b) -> Dispatcher:
-    return Dispatcher([service_a, service_b])
+    with patch.object(Dispatcher, 'SERVICE_LIST', [service_a, service_b]):
+        return Dispatcher()
 
 
 @fixture

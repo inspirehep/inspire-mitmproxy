@@ -22,15 +22,18 @@
 
 """Tests for the WhitelistService"""
 
+from mock import patch
 from pytest import fixture, raises
 
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import DoNotIntercept
+from inspire_mitmproxy.whitelist_service import WhitelistService
 
 
 @fixture(scope='function')
 def dispatcher() -> Dispatcher:
-    return Dispatcher([])
+    with patch.object(Dispatcher, 'SERVICE_LIST', [WhitelistService]):
+        return Dispatcher()
 
 
 def test_whitelist_service_raises(dispatcher):
