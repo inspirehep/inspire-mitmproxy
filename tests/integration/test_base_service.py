@@ -27,9 +27,9 @@ from os import environ
 from mock import patch
 from pytest import fixture, raises
 
-from inspire_mitmproxy.base_service import BaseService
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import ScenarioNotFound
+from inspire_mitmproxy.services import BaseService
 
 
 @fixture
@@ -38,7 +38,7 @@ def service_a():
         SERVICE_HOSTS = ['host_a.local']
         active_scenario = None
 
-    return TestServiceA()
+    return TestServiceA
 
 
 @fixture
@@ -47,12 +47,13 @@ def service_b():
         SERVICE_HOSTS = ['host_b.local']
         active_scenario = None
 
-    return TestServiceB()
+    return TestServiceB
 
 
 @fixture(scope='function')
 def dispatcher(scenarios_dir, service_a, service_b) -> Dispatcher:
-    return Dispatcher([service_a, service_b])
+    with patch.object(Dispatcher, 'SERVICE_LIST', [service_a, service_b]):
+        return Dispatcher()
 
 
 @fixture

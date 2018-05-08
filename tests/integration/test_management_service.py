@@ -24,13 +24,13 @@
 
 from json import loads as json_loads
 from os import environ
-from typing import List
+from typing import List, Type
 
 from mock import patch
 from pytest import fixture
 
-from inspire_mitmproxy.base_service import BaseService
 from inspire_mitmproxy.dispatcher import Dispatcher
+from inspire_mitmproxy.services import BaseService
 
 
 @fixture(scope='function')
@@ -38,9 +38,10 @@ def dispatcher() -> Dispatcher:
     class TestService(BaseService):
         SERVICE_HOSTS = ['test-service.local']
 
-    services: List[BaseService] = [TestService()]
+    services: List[Type[BaseService]] = [TestService]
 
-    return Dispatcher(services)
+    with patch.object(Dispatcher, 'SERVICE_LIST', services):
+        return Dispatcher()
 
 
 @fixture
@@ -85,10 +86,6 @@ def test_management_service_get_services(dispatcher):
         '1': {
             'class': 'TestService',
             'service_hosts': ['test-service.local'],
-        },
-        '2': {
-            'class': 'WhitelistService',
-            'service_hosts': ['indexer', 'test-indexer'],
         },
     }
 

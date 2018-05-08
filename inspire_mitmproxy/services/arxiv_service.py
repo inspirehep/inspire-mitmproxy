@@ -20,30 +20,10 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-"""Tests for the WhitelistService"""
+"""Fake Service for Arxiv."""
 
-from mock import patch
-from pytest import fixture, raises
-
-from inspire_mitmproxy.dispatcher import Dispatcher
-from inspire_mitmproxy.errors import DoNotIntercept
-from inspire_mitmproxy.whitelist_service import WhitelistService
+from .base_service import BaseService
 
 
-@fixture(scope='function')
-def dispatcher() -> Dispatcher:
-    with patch.object(Dispatcher, 'SERVICE_LIST', [WhitelistService]):
-        return Dispatcher()
-
-
-def test_whitelist_service_raises(dispatcher):
-    with raises(DoNotIntercept):
-        dispatcher.process_request({
-            'method': 'GET',
-            'uri': 'http://indexer:9200/records-hep/fake',
-            'body': '{}',
-            'headers': {
-                'Host': ['indexer:9200'],
-                'Accept': ['application/json'],
-            }
-        })
+class ArxivService(BaseService):
+    SERVICE_HOSTS = ['arxiv.org', 'export.arxiv.org']

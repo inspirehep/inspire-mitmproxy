@@ -23,13 +23,13 @@
 """Dispatcher forwards requests to Services."""
 
 from logging import getLogger
-from typing import List, cast
+from typing import List, Type, cast
 
 from mitmproxy.http import HTTPFlow, HTTPResponse
 
-from .base_service import BaseService
 from .errors import DoNotIntercept, NoServicesForRequest
 from .management_service import ManagementService
+from .services import ArxivService, BaseService
 from .translator import dict_to_response, request_to_dict
 from .whitelist_service import WhitelistService
 
@@ -37,11 +37,15 @@ logger = getLogger(__name__)
 
 
 class Dispatcher:
-    def __init__(self, services: List[BaseService]) -> None:
-        whitelist_service = WhitelistService()
-        services = services + [cast(BaseService, whitelist_service)]
-        mgmt_service = ManagementService(services)
-        self.services = [cast(BaseService, mgmt_service)] + services
+    SERVICE_LIST: List[Type[BaseService]] = [
+        ArxivService,
+        WhitelistService,
+    ]
+
+    def __init__(self) -> None:
+        self.services = [service_class() for service_class in self.SERVICE_LIST]
+        mgmt_service = ManagementService(self.services)
+        self.services = [cast(BaseService, mgmt_service)] + self.services
 
     def process_request(self, request: dict) -> dict:
         """Perform operations and give response."""

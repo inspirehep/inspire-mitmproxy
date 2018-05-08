@@ -20,11 +20,12 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from mock import patch
 from pytest import fixture, mark, raises
 
-from inspire_mitmproxy.base_service import BaseService
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import NoServicesForRequest
+from inspire_mitmproxy.services import BaseService
 
 
 def make_test_service(url, message):
@@ -43,18 +44,17 @@ def make_test_service(url, message):
                 }
             }
 
-    return TestService()
+    return TestService
 
 
 @fixture(scope='module')
 def dispatcher():
-    service_list = [
+    with patch.object(Dispatcher, 'SERVICE_LIST', [
         make_test_service('test-service-a.local', 'TestServiceA'),
         make_test_service('test-service-b.local', 'TestServiceB'),
         make_test_service('test-service-a.local', 'TestServiceC'),
-    ]
-
-    return Dispatcher(services=service_list)
+    ]):
+        return Dispatcher()
 
 
 @mark.parametrize(

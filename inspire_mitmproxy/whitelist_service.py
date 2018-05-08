@@ -22,8 +22,8 @@
 
 """Service which allows all requests outside"""
 
-from .base_service import BaseService
 from .errors import DoNotIntercept
+from .services import BaseService
 
 
 class WhitelistService(BaseService):
