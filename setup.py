@@ -40,15 +40,12 @@ install_requires = [
 ]
 
 tests_require = [
-    'autosemver~=0.0,>=0.5.3',
     'flake8~=3.0,>=3.5.0',
     'isort~=4.0,>=4.3.4',
-    'mitmproxy~=3.0,>=3.0.4',
     'mypy~=0.0,>=0.590',
     'mock~=2.0,>=2.0.0',
     'pytest~=3.0,>=3.5.0',
     'pytest-cov~=2.0,>=2.5.1',
-    'pyyaml~=3.0,>=3.12',
 ]
 
 docs_require: List[str] = []
