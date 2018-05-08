@@ -35,6 +35,8 @@ setup_requires = [
 install_requires = [
     'autosemver~=0.0,>=0.5.3',
     'mitmproxy~=3.0,>=3.0.4',
+    'pathlib~=1.0,>=1.0.1',
+    'pyyaml~=3.0,>=3.12',
 ]
 
 tests_require = [
@@ -46,6 +48,7 @@ tests_require = [
     'mock~=2.0,>=2.0.0',
     'pytest~=3.0,>=3.5.0',
     'pytest-cov~=2.0,>=2.5.1',
+    'pyyaml~=3.0,>=3.12',
 ]
 
 docs_require: List[str] = []

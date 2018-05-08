@@ -22,35 +22,54 @@
 
 """INSPIRE-MITMProxy Errors"""
 
-from .base_service import BaseService
 
-
-class HTTPError(Exception):
+class MITMProxyHTTPError(Exception):
     http_status_code = 500
 
 
-class NoServicesForRequest(HTTPError):
+class NoServicesForRequest(MITMProxyHTTPError):
     def __init__(self, request: dict) -> None:
-        self.http_status_code = 404
+        self.http_status_code = 501
         message = "None of the registered services can handle this request: %s" % request
         super().__init__(message)
 
 
-class RequestNotHandledInService(HTTPError):
-    def __init__(self, service: BaseService, request: dict) -> None:
+class RequestNotHandledInService(MITMProxyHTTPError):
+    def __init__(self, service_name: str, request: dict) -> None:
         self.http_status_code = 501
-        message = "%s can't handle the request %s" % (service, request)
+        message = "%s can't handle the request %s" % (service_name, request)
         super().__init__(message)
 
 
-class InvalidRequest(HTTPError):
-    def __init__(self, service: BaseService, request: dict) -> None:
+class InvalidRequest(MITMProxyHTTPError):
+    def __init__(self, service_name: str, request: dict) -> None:
         self.http_status_code = 400
-        message = "Invalid request %s for service %s" % (request, service)
+        message = "Invalid request %s for service %s" % (request, service_name)
         super().__init__(message)
 
 
 class DoNotIntercept(Exception):
-    def __init__(self, service: BaseService, request: dict) -> None:
-        message = "Allow request %s (in %s) to pass through to the outside" % (request, service)
+    def __init__(self, service_name: str, request: dict) -> None:
+        message = "Allow request %s in %s to pass through to the outside" % (request, service_name)
+        super().__init__(message)
+
+
+class NoMatchingRecording(MITMProxyHTTPError):
+    def __init__(self, service_name: str, request: dict) -> None:
+        self.http_status_code = 501
+        message = "Service %s cannot handle this request: %s" % (service_name, request)
+        super().__init__(message)
+
+
+class ScenarioNotFound(MITMProxyHTTPError):
+    def __init__(self, service_name: str, scenario: str) -> None:
+        self.http_status_code = 501
+        message = "Scenario %s not found in service %s" % (scenario, service_name)
+        super().__init__(message)
+
+
+class ScenarioUndefined(MITMProxyHTTPError):
+    def __init__(self, service_name: str) -> None:
+        self.http_status_code = 501
+        message = "Scenario not set in service %s" % (service_name)
         super().__init__(message)

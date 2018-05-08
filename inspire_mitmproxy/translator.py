@@ -47,12 +47,16 @@ def dict_to_response(response: dict) -> HTTPResponse:
     headers = dict_to_headers(response['headers'])
     encoding = encoding_by_header('content-type', headers)
 
+    content = response['body']
+    if isinstance(content, str):
+        content = content.encode(encoding)
+
     return HTTPResponse(
         http_version='HTTP/1.1',
         status_code=response['status']['code'],
         reason=response['status']['message'].encode('ascii'),
         headers=headers,
-        content=response['body'].encode(encoding),
+        content=content,
     )
 
 

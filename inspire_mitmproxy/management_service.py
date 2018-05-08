@@ -25,9 +25,8 @@
 from json import JSONDecodeError
 from json import dumps as json_dumps
 from json import loads as json_loads
-from os import environ, getcwd, listdir
-from os.path import isdir, isfile
-from os.path import join as path_join
+from os import environ, getcwd
+from pathlib import Path
 from typing import Dict, List, Optional, Union, cast
 from urllib.parse import urlparse
 
@@ -63,33 +62,30 @@ class ManagementService(BaseService):
         elif path == '/config' and method == 'POST':
             return self.build_response(201, self.post_config(request))
 
-        raise RequestNotHandledInService(self, request)
+        raise RequestNotHandledInService(self.name, request)
 
     def get_services(self) -> dict:
         return {
             idx: {
-                'class': type(service).__name__,
+                'class': service.name,
                 'service_hosts': service.SERVICE_HOSTS,
             }
             for idx, service in enumerate([cast(BaseService, self)] + self.services)
         }
 
     def get_scenarios(self) -> dict:
-        path = environ.get('SCENARIOS_PATH', './scenarios/')
+        path = Path(environ.get('SCENARIOS_PATH', './scenarios/'))
         response: Dict[str, Dict[str, Dict[str, List[str]]]] = {
-            scenario: {
+            scenario.name: {
                 'responses': {
-                    service: [
-                        name for name in sorted(listdir(path_join(path, scenario, service)))
-                        if isfile(path_join(path, scenario, service, name)) and name.endswith('.yaml')
+                    service.name: [
+                        response_file.name for response_file in sorted(service.iterdir())
+                        if response_file.is_file() and response_file.suffix == '.yaml'
                     ]
-                    for service in [
-                        name for name in listdir(path_join(path, scenario))
-                        if isdir(path_join(path, scenario, name))
-                    ]
+                    for service in scenario.iterdir() if service.is_dir()
                 }
             }
-            for scenario in [name for name in listdir(path) if isdir(path_join(path, name))]
+            for scenario in path.iterdir() if scenario.is_dir()
         }
 
         return response
@@ -101,14 +97,16 @@ class ManagementService(BaseService):
         try:
             config_update = json_loads(request['body'])
             self.config.update(config_update)
+            self.config_propagate()
         except (JSONDecodeError, ValueError):
-            raise InvalidRequest(self, request)
+            raise InvalidRequest(self.name, request)
 
     def post_config(self, request: dict):
         try:
             self.config = json_loads(request['body'])
+            self.config_propagate()
         except (JSONDecodeError):
-            raise InvalidRequest(self, request)
+            raise InvalidRequest(self.name, request)
 
     def build_response(self, code: int, json_message: Optional[Union[dict, list]]) -> dict:
         if json_message:
@@ -127,3 +125,8 @@ class ManagementService(BaseService):
                 'Server': ['inspire-mitmproxy/' + get_current_version(getcwd())]
             }
         }
+
+    def config_propagate(self):
+        """On change of config, propagate relevant information to services."""
+        for service in self.services:
+            service.active_scenario = self.config.get('active_scenario')

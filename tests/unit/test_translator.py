@@ -44,6 +44,19 @@ TEST_DICT_RESPONSE = {
     }
 }
 
+TEST_DICT_RESPONSE_WITH_BYTES_BODY = {
+    'status': {
+        'code': 200,
+        'message': 'OK',
+    },
+    'body': b'Witaj, \xb6wiecie!',
+    'headers': {
+        'content-type': ['text/plain; charset=ISO-8859-2'],
+        'date': ['Wed, 21 Mar 2018 12:47:18 GMT'],
+        'server': ['nginx/1.12.2'],
+    }
+}
+
 
 TEST_MITM_RESPONSE = HTTPResponse(
     http_version='HTTP/1.1',
@@ -131,6 +144,13 @@ def test_headers_to_dict():
 
 def test_dict_to_response():
     result = dict_to_response(TEST_DICT_RESPONSE)
+    expected = TEST_MITM_RESPONSE
+
+    assert result == expected
+
+
+def test_dict_to_response_with_bytes_body():
+    result = dict_to_response(TEST_DICT_RESPONSE_WITH_BYTES_BODY)
     expected = TEST_MITM_RESPONSE
 
     assert result == expected

@@ -30,7 +30,7 @@ else
 fi
 
 echo "Running FLAKE8"
-flake8 inspire_mitmproxy tests entrypoint.py
+flake8 .
 
 echo "Running MyPy"
 export MYPYPATH="${VIRTUAL_ENV}/lib/python3.6/site-packages/"

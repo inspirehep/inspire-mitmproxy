@@ -28,9 +28,9 @@ from .errors import DoNotIntercept
 
 class WhitelistService(BaseService):
     SERVICE_HOSTS = [
-        'indexer:9200',
-        'test-indexer:9200',
+        'indexer',
+        'test-indexer',
     ]
 
     def process_request(self, request: dict):
-        raise DoNotIntercept(self, request)
+        raise DoNotIntercept(self.name, request)
