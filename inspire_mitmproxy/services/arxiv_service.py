@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of INSPIRE-MITMROXY.
+# This file is part of INSPIRE-MITMPROXY.
 # Copyright (C) 2018 CERN.
 #
 # INSPIRE is free software: you can redistribute it and/or modify
@@ -20,17 +20,10 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-"""Service which allows all requests outside"""
+"""Fake Service for Arxiv."""
 
-from .errors import DoNotIntercept
-from .services import BaseService
+from .base_service import BaseService
 
 
-class WhitelistService(BaseService):
-    SERVICE_HOSTS = [
-        'indexer',
-        'test-indexer',
-    ]
-
-    def process_request(self, request: dict):
-        raise DoNotIntercept(self.name, request)
+class ArxivService(BaseService):
+    SERVICE_HOSTS = ['arxiv.org', 'export.arxiv.org']

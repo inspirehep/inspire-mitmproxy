@@ -27,8 +27,8 @@ from os import environ
 from mock import patch
 from pytest import fixture, mark, raises
 
-from inspire_mitmproxy.base_service import BaseService
 from inspire_mitmproxy.errors import NoMatchingRecording
+from inspire_mitmproxy.services import BaseService
 
 
 @fixture

@@ -22,9 +22,9 @@
 
 from pytest import fixture, mark, raises
 
-from inspire_mitmproxy.base_service import BaseService
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import NoServicesForRequest
+from inspire_mitmproxy.services import BaseService
 
 
 def make_test_service(url, message):

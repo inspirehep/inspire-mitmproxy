@@ -27,9 +27,9 @@ from typing import List, cast
 
 from mitmproxy.http import HTTPFlow, HTTPResponse
 
-from .base_service import BaseService
 from .errors import DoNotIntercept, NoServicesForRequest
 from .management_service import ManagementService
+from .services import BaseService
 from .translator import dict_to_response, request_to_dict
 from .whitelist_service import WhitelistService
 

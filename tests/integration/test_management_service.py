@@ -29,8 +29,8 @@ from typing import List
 from mock import patch
 from pytest import fixture
 
-from inspire_mitmproxy.base_service import BaseService
 from inspire_mitmproxy.dispatcher import Dispatcher
+from inspire_mitmproxy.services import BaseService
 
 
 @fixture(scope='function')

@@ -24,11 +24,11 @@
 
 from typing import List
 
-from inspire_mitmproxy.base_service import BaseService
 from inspire_mitmproxy.dispatcher import Dispatcher
+from inspire_mitmproxy.services import ArxivService, BaseService
 
 service_list: List[BaseService] = [
-
+    ArxivService(),
 ]
 
 dispatcher = Dispatcher(service_list)

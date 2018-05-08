@@ -30,7 +30,7 @@ from urllib.parse import urlparse
 
 from yaml import load as yaml_load
 
-from .errors import NoMatchingRecording, ScenarioNotFound, ScenarioUndefined
+from ..errors import NoMatchingRecording, ScenarioNotFound, ScenarioUndefined
 
 
 class BaseService:
@@ -63,9 +63,11 @@ class BaseService:
         parsed_incoming_uri = urlparse(incoming_request['uri'])
         parsed_recorded_uri = urlparse(recorded_request['uri'])
 
-        return incoming_request['method'] == recorded_request['method'] \
-            and parsed_incoming_uri == parsed_recorded_uri \
-            and incoming_request['body'] == recorded_request['body']
+        return (
+            incoming_request['method'] == recorded_request['method']
+            and parsed_incoming_uri == parsed_recorded_uri
+            and (incoming_request['body'] or None) == (recorded_request['body'] or None)
+        )
 
     def get_responses_for_active_scenario(self) -> List[dict]:
         """Get a list of scenarios"""

@@ -33,8 +33,8 @@ from urllib.parse import urlparse
 from autosemver import get_current_version
 from mitmproxy.net.http.status_codes import RESPONSES
 
-from .base_service import BaseService
 from .errors import InvalidRequest, RequestNotHandledInService
+from .services import BaseService
 
 
 class ManagementService(BaseService):

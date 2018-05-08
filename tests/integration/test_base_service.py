@@ -27,9 +27,9 @@ from os import environ
 from mock import patch
 from pytest import fixture, raises
 
-from inspire_mitmproxy.base_service import BaseService
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import ScenarioNotFound
+from inspire_mitmproxy.services import BaseService
 
 
 @fixture
