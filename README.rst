@@ -24,11 +24,20 @@
  INSPIRE-MITMProxy
 ===================
 
+.. image:: https://img.shields.io/docker/pulls/inspirehep/inspire-mitmproxy.svg
+        :target: https://hub.docker.com/r/inspirehep/inspire-mitmproxy/
+
+.. image:: https://img.shields.io/pypi/v/inspire-mitmproxy.svg
+        :target: https://pypi.python.org/pypi/inspire-mitmproxy
+
 .. image:: https://travis-ci.org/inspirehep/inspire-mitmproxy.svg?branch=master
     :target: https://travis-ci.org/inspirehep/inspire-mitmproxy
 
 .. image:: https://coveralls.io/repos/github/inspirehep/inspire-mitmproxy/badge.svg?branch=master
     :target: https://coveralls.io/github/inspirehep/inspire-mitmproxy?branch=master
+
+.. image:: https://img.shields.io/github/license/inspirehep/inspire-mitmproxy.svg
+        :target: https://github.com/inspirehep/inspire-mitmproxy/blob/master/LICENSE
 
 
 About

@@ -59,36 +59,13 @@ extras_require['all'] = []
 for name, reqs in extras_require.items():
     extras_require['all'].extend(reqs)
 
-URL = 'https://github.com/inspirehep/inspire-mitmproxy'
-
 setup(
-    name='inspire-mitmproxy',
-    author="CERN",
-    author_email='admin@inspirehep.net',
-    autosemver={
-        'bugtracker_url': URL + '/issues',
-    },
     description=__doc__,
     long_description=readme,
-    url=URL,
-    license='GPLv3',
-    zip_safe=False,
-    include_package_data=True,
-    platforms='any',
+    url='https://github.com/inspirehep/inspire-mitmproxy',
     install_requires=install_requires,
     tests_require=tests_require,
     setup_requires=setup_requires,
     extras_require=extras_require,
-    classifiers=[
-        'Intended Audience :: Developers',
-        'Environment :: Console',
-        'License :: OSI Approved :: BSD License',
-        'Operating System :: OS Independent',
-        'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Software Development :: Libraries :: Application Frameworks',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-    ],
+    autosemver={'bugtracker_url': '/issues'}
 )
