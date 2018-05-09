@@ -27,11 +27,11 @@ from typing import List, Type, cast
 
 from mitmproxy.http import HTTPFlow, HTTPResponse
 
+from inspire_mitmproxy.services.whitelist_service import WhitelistService
+
 from .errors import DoNotIntercept, NoServicesForRequest
 from .http import MITMRequest, MITMResponse
-from .management_service import ManagementService
-from .services import ArxivService, BaseService
-from .whitelist_service import WhitelistService
+from .services import ArxivService, BaseService, ManagementService
 
 logger = getLogger(__name__)
 

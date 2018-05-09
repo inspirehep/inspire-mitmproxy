@@ -28,8 +28,7 @@ from mock import patch
 from pytest import fixture, mark, raises
 
 from inspire_mitmproxy.errors import InvalidRequest
-from inspire_mitmproxy.management_service import ManagementService
-from inspire_mitmproxy.services import BaseService
+from inspire_mitmproxy.services import BaseService, ManagementService
 
 
 @fixture(scope='function')
@@ -176,7 +175,10 @@ def test_management_service_post_config_array_raises(management_service):
 
 
 def test_management_service_build_response(management_service):
-    with patch('inspire_mitmproxy.management_service.get_current_version', return_value='0.0.1'):
+    with patch(
+        'inspire_mitmproxy.services.management_service.get_current_version',
+        return_value='0.0.1',
+    ):
         result = management_service.build_response(201, json_message={'test': 'message'})
 
     expected = {

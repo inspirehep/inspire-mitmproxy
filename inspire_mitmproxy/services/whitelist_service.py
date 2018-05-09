@@ -22,8 +22,8 @@
 
 """Service which allows all requests outside"""
 
-from .errors import DoNotIntercept
-from .services import BaseService
+from inspire_mitmproxy.errors import DoNotIntercept
+from inspire_mitmproxy.services import BaseService
 
 
 class WhitelistService(BaseService):

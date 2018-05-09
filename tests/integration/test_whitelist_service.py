@@ -27,7 +27,7 @@ from pytest import fixture, raises
 
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import DoNotIntercept
-from inspire_mitmproxy.whitelist_service import WhitelistService
+from inspire_mitmproxy.services.whitelist_service import WhitelistService
 
 
 @fixture(scope='function')
