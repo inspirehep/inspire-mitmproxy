@@ -28,9 +28,9 @@ from typing import List, Type, cast
 from mitmproxy.http import HTTPFlow, HTTPResponse
 
 from .errors import DoNotIntercept, NoServicesForRequest
+from .http import MITMRequest, MITMResponse
 from .management_service import ManagementService
 from .services import ArxivService, BaseService
-from .translator import dict_to_response, request_to_dict
 from .whitelist_service import WhitelistService
 
 logger = getLogger(__name__)
@@ -57,8 +57,8 @@ class Dispatcher:
     def request(self, flow: HTTPFlow):
         """MITMProxy addon event interface for outgoing request."""
         try:
-            request = request_to_dict(flow.request)
-            response = dict_to_response(self.process_request(request))
+            request = MITMRequest.from_mitmproxy(flow.request).to_dict()
+            response = MITMResponse.from_dict(self.process_request(request)).to_mitmproxy()
             flow.response = response
         except DoNotIntercept as e:
             # Let the request pass through, by not interrupting the flow, but log it
