@@ -22,7 +22,7 @@
 
 from mitmproxy.net.http.headers import Headers
 
-from inspire_mitmproxy.http.headers import MITMHeaders
+from inspire_mitmproxy.http import MITMHeaders
 
 TEST_DICT_HEADERS = {
     'Content-Type': ['text/plain; charset=ASCII'],

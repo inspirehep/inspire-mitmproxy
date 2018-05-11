@@ -20,8 +20,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from inspire_mitmproxy.http import MITMHeaders
-from inspire_mitmproxy.http.utils import encoding_by_header
+from inspire_mitmproxy.http import MITMHeaders, encoding_by_header
 
 TEST_HEADERS = MITMHeaders({
     'Content-Type': ['text/plain; charset=ASCII'],
