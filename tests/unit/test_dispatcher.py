@@ -25,6 +25,7 @@ from pytest import fixture, mark, raises
 
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import NoServicesForRequest
+from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
 from inspire_mitmproxy.services import BaseService
 
 
@@ -33,16 +34,12 @@ def make_test_service(url, message):
         SERVICE_HOSTS = [url]
 
         def process_request(self, request: dict):
-            return {
-                'status': {
-                    'code': 200,
-                    'message': 'OK',
-                },
-                'body': message,
-                'headers': {
+            return MITMResponse(
+                body=message,
+                headers=MITMHeaders({
                     'Content-Type': ['text/plain'],
-                }
-            }
+                })
+            )
 
     return TestService
 
@@ -71,25 +68,25 @@ def dispatcher():
     ]
 )
 def test_dispatcher_process_request(dispatcher, url, message):
-    result = dispatcher.process_request({
-        'method': 'GET',
-        'uri': url,
-        'body': None,
-        'headers': {
-            'Accept': 'text/plain'
-        }
-    })
+    result = dispatcher.process_request(
+        MITMRequest(
+            url=url,
+            headers=MITMHeaders({
+                'Accept': ['text/plain'],
+            })
+        )
+    )
 
-    assert result['body'] == message
+    assert result.body == message
 
 
 def test_dispatcher_process_request_fail_if_none_match(dispatcher):
     with raises(NoServicesForRequest):
-        dispatcher.process_request({
-            'method': 'GET',
-            'uri': 'http://test-service-z.local/does_not_exist',
-            'body': None,
-            'headers': {
-                'Accept': 'text/plain'
-            }
-        })
+        dispatcher.process_request(
+            MITMRequest(
+                url='http://test-service-z.local/does_not_exist',
+                headers=MITMHeaders({
+                    'Accept': ['text/plain'],
+                })
+            )
+        )

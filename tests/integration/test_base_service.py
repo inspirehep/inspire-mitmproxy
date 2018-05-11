@@ -29,6 +29,7 @@ from pytest import fixture, raises
 
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import ScenarioNotFound
+from inspire_mitmproxy.http import MITMHeaders, MITMRequest
 from inspire_mitmproxy.services import BaseService
 
 
@@ -65,75 +66,78 @@ def scenarios_dir(request):
 
 
 def test_base_service_process_request_scenario1(dispatcher, request):
-    response_set_config = dispatcher.process_request({
-        'method': 'POST',
-        'uri': 'http://mitm-manager.local/config',
-        'body': '{"active_scenario": "test_scenario1"}',
-        'headers': {
+    request_set_config = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "test_scenario1"}',
+        headers=MITMHeaders({
             'Host': ['mitm-manager.local'],
             'Accept': ['application/json'],
-        }
-    })
+        })
+    )
 
-    assert response_set_config['status']['code'] == 201
-
-    response_service_1 = dispatcher.process_request({
-        'method': 'GET',
-        'uri': 'https://host_a.local/api',
-        'body': None,
-        'headers': {
+    request_service_1 = MITMRequest(
+        method='GET',
+        url='https://host_a.local/api',
+        headers=MITMHeaders({
             'Host': ['host_a.local'],
             'Accept': ['application/json'],
-        }
-    })
+        })
+    )
 
-    assert response_service_1['body'] == 'test_scenario1/TestServiceA/0'
-
-    response_service_2 = dispatcher.process_request({
-        'method': 'GET',
-        'uri': 'https://host_b.local/api',
-        'body': None,
-        'headers': {
+    request_service_2 = MITMRequest(
+        method='GET',
+        url='https://host_b.local/api',
+        headers=MITMHeaders({
             'Host': ['host_b.local'],
             'Accept': ['application/json'],
-        }
-    })
+        })
+    )
 
-    assert response_service_2['body'] == 'test_scenario1/TestServiceB/0'
+    response_set_config = dispatcher.process_request(request_set_config)
+    assert response_set_config.status_code == 201
+
+    response_service_1 = dispatcher.process_request(request_service_1)
+    assert response_service_1.body == 'test_scenario1/TestServiceA/0'
+
+    response_service_2 = dispatcher.process_request(request_service_2)
+    assert response_service_2.body == 'test_scenario1/TestServiceB/0'
 
 
 def test_base_service_process_request_scenario2_and_raise(dispatcher, request):
-    response_set_config = dispatcher.process_request({
-        'method': 'POST',
-        'uri': 'http://mitm-manager.local/config',
-        'body': '{"active_scenario": "test_scenario2"}',
-        'headers': {
+    request_set_config = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "test_scenario2"}',
+        headers=MITMHeaders({
             'Host': ['mitm-manager.local'],
             'Accept': ['application/json'],
-        }
-    })
+        })
+    )
 
-    assert response_set_config['status']['code'] == 201
-
-    response_service_1 = dispatcher.process_request({
-        'method': 'GET',
-        'uri': 'https://host_a.local/api',
-        'body': None,
-        'headers': {
+    request_service_1 = MITMRequest(
+        method='GET',
+        url='https://host_a.local/api',
+        headers=MITMHeaders({
             'Host': ['host_a.local'],
             'Accept': ['application/json'],
-        }
-    })
+        })
+    )
 
-    assert response_service_1['body'] == 'test_scenario2/TestServiceA/0'
+    request_service_2 = MITMRequest(
+        method='GET',
+        url='http://host_b.local/api',
+        headers=MITMHeaders({
+            'Host': ['host_b.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    response_set_config = dispatcher.process_request(request_set_config)
+    assert response_set_config.status_code == 201
+
+    response_service_1 = dispatcher.process_request(request_service_1)
+    assert response_service_1.body == 'test_scenario2/TestServiceA/0'
 
     with raises(ScenarioNotFound):
-        dispatcher.process_request({
-            'method': 'GET',
-            'uri': 'https://host_b.local/api',
-            'body': None,
-            'headers': {
-                'Host': ['host_b.local'],
-                'Accept': ['application/json'],
-            }
-        })
+        dispatcher.process_request(request_service_2)

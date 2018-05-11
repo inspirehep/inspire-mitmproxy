@@ -47,7 +47,7 @@ class Dispatcher:
         mgmt_service = ManagementService(self.services)
         self.services = [cast(BaseService, mgmt_service)] + self.services
 
-    def process_request(self, request: dict) -> dict:
+    def process_request(self, request: MITMRequest) -> MITMResponse:
         """Perform operations and give response."""
         for service in self.services:
             if service.handles_request(request):
@@ -57,8 +57,8 @@ class Dispatcher:
     def request(self, flow: HTTPFlow):
         """MITMProxy addon event interface for outgoing request."""
         try:
-            request = MITMRequest.from_mitmproxy(flow.request).to_dict()
-            response = MITMResponse.from_dict(self.process_request(request)).to_mitmproxy()
+            request = MITMRequest.from_mitmproxy(flow.request)
+            response = self.process_request(request).to_mitmproxy()
             flow.response = response
         except DoNotIntercept as e:
             # Let the request pass through, by not interrupting the flow, but log it

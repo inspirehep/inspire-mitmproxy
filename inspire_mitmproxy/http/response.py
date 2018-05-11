@@ -43,7 +43,7 @@ class MITMResponse:
     ) -> None:
         self.status_code = status_code
         self.status_message = status_message or RESPONSES[status_code]
-        self.body = body
+        self.body = body or ''
         self.headers = headers or MITMHeaders({})
         self.http_version = http_version or 'HTTP/1.1'
         self.original_encoding = original_encoding or encoding_by_header(self.headers)

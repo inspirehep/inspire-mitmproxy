@@ -31,10 +31,10 @@ from typing import Dict, List, Optional, Union, cast
 from urllib.parse import urlparse
 
 from autosemver import get_current_version
-from mitmproxy.net.http.status_codes import RESPONSES
 
-from inspire_mitmproxy.errors import InvalidRequest, RequestNotHandledInService
-from inspire_mitmproxy.services import BaseService
+from ..errors import InvalidRequest, RequestNotHandledInService
+from ..http import MITMHeaders, MITMRequest, MITMResponse
+from ..services import BaseService
 
 
 class ManagementService(BaseService):
@@ -46,10 +46,10 @@ class ManagementService(BaseService):
             'active_scenario': None,
         }
 
-    def process_request(self, request: dict) -> dict:
-        parsed_url = urlparse(request['uri'])
+    def process_request(self, request: MITMRequest) -> MITMResponse:
+        parsed_url = urlparse(request.url)
         path = parsed_url.path
-        method = request['method']
+        method = request.method
 
         if path == '/services' and method == 'GET':
             return self.build_response(200, self.get_services())
@@ -93,38 +93,35 @@ class ManagementService(BaseService):
     def get_config(self) -> dict:
         return self.config
 
-    def put_config(self, request: dict):
+    def put_config(self, request: MITMRequest):
         try:
-            config_update = json_loads(request['body'])
+            config_update = json_loads(request.body)
             self.config.update(config_update)
             self.config_propagate()
         except (JSONDecodeError, ValueError):
             raise InvalidRequest(self.name, request)
 
-    def post_config(self, request: dict):
+    def post_config(self, request: MITMRequest):
         try:
-            self.config = json_loads(request['body'])
+            self.config = json_loads(request.body)
             self.config_propagate()
         except (JSONDecodeError):
             raise InvalidRequest(self.name, request)
 
-    def build_response(self, code: int, json_message: Optional[Union[dict, list]]) -> dict:
+    def build_response(self, code: int, json_message: Optional[Union[dict, list]]) -> MITMResponse:
         if json_message:
             body = json_dumps(json_message, indent=2)
         else:
             body = ''
 
-        return {
-            'status': {
-                'message': RESPONSES[code],
-                'code': code,
-            },
-            'body': body,
-            'headers': {
-                'Content-Type': ['application/json'],
+        return MITMResponse(
+            status_code=code,
+            body=body,
+            headers=MITMHeaders({
+                'Content-Type': ['application/json; encoding=UTF-8'],
                 'Server': ['inspire-mitmproxy/' + get_current_version(getcwd())]
-            }
-        }
+            }),
+        )
 
     def config_propagate(self):
         """On change of config, propagate relevant information to services."""

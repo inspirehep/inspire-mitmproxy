@@ -22,40 +22,42 @@
 
 """INSPIRE-MITMProxy Errors"""
 
+from .http import MITMRequest
+
 
 class MITMProxyHTTPError(Exception):
     http_status_code = 500
 
 
 class NoServicesForRequest(MITMProxyHTTPError):
-    def __init__(self, request: dict) -> None:
+    def __init__(self, request: MITMRequest) -> None:
         self.http_status_code = 501
         message = f"None of the registered services can handle this request: {request}"
         super().__init__(message)
 
 
 class RequestNotHandledInService(MITMProxyHTTPError):
-    def __init__(self, service_name: str, request: dict) -> None:
+    def __init__(self, service_name: str, request: MITMRequest) -> None:
         self.http_status_code = 501
         message = f"{service_name} can't handle the request {request}"
         super().__init__(message)
 
 
 class InvalidRequest(MITMProxyHTTPError):
-    def __init__(self, service_name: str, request: dict) -> None:
+    def __init__(self, service_name: str, request: MITMRequest) -> None:
         self.http_status_code = 400
         message = f"Invalid request {request} for service {service_name}"
         super().__init__(message)
 
 
 class DoNotIntercept(Exception):
-    def __init__(self, service_name: str, request: dict) -> None:
+    def __init__(self, service_name: str, request: MITMRequest) -> None:
         message = f"Allow request {request} in {service_name} to pass through to the outside"
         super().__init__(message)
 
 
 class NoMatchingRecording(MITMProxyHTTPError):
-    def __init__(self, service_name: str, request: dict) -> None:
+    def __init__(self, service_name: str, request: MITMRequest) -> None:
         self.http_status_code = 501
         message = f"Service {service_name} cannot handle this request: {request}"
         super().__init__(message)

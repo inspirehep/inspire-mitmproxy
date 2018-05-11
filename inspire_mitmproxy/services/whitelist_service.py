@@ -23,6 +23,7 @@
 """Service which allows all requests outside"""
 
 from inspire_mitmproxy.errors import DoNotIntercept
+from inspire_mitmproxy.http import MITMRequest
 from inspire_mitmproxy.services import BaseService
 
 
@@ -32,5 +33,5 @@ class WhitelistService(BaseService):
         'test-indexer',
     ]
 
-    def process_request(self, request: dict):
+    def process_request(self, request: MITMRequest):
         raise DoNotIntercept(self.name, request)

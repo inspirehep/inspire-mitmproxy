@@ -44,7 +44,7 @@ class MITMRequest:
     ) -> None:
         self.url = url
         self.method = method
-        self.body = body
+        self.body = body or ''
         self.headers = headers or MITMHeaders({})
         self.original_encoding = original_encoding or encoding_by_header(self.headers)
         self.http_version = http_version or 'HTTP/1.1'
