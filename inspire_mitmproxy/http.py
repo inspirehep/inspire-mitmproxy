@@ -170,7 +170,7 @@ class MITMRequest:
 
     def __repr__(self):
         return f'MITMRequest("{self.url}", "{self.method}", ' \
-            f'headers={self.headers}, body="{self.body}")'
+            f'headers={repr(self.headers)}, body="{self.body}")'
 
 
 class MITMResponse:
@@ -247,4 +247,4 @@ class MITMResponse:
 
     def __repr__(self):
         return f'MITMResponse({self.status_code}, "{self.status_message}", ' \
-            f'headers={self.headers}, body="{self.body}")'
+            f'headers={repr(self.headers)}, body="{self.body}")'

@@ -24,7 +24,7 @@
 
 from os import environ
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Union, cast
 from urllib.parse import splitport  # type: ignore
 from urllib.parse import urlparse
 
@@ -32,6 +32,9 @@ from yaml import load as yaml_load
 
 from ..errors import NoMatchingRecording, ScenarioNotFound, ScenarioUndefined
 from ..http import MITMRequest, MITMResponse
+
+
+Interaction = Dict[str, Union[MITMRequest, MITMResponse]]
 
 
 class BaseService:
@@ -54,9 +57,9 @@ class BaseService:
 
     def process_request(self, request: MITMRequest) -> MITMResponse:
         """Perform operations and give response."""
-        for recorded_response in self.get_responses_for_active_scenario():
-            if self.match_request(request, recorded_response[0]):
-                return recorded_response[1]
+        for recorded_response in self.get_interactions_for_active_scenario():
+            if self.match_request(request, cast(MITMRequest, recorded_response['request'])):
+                return cast(MITMResponse, recorded_response['response'])
 
         raise NoMatchingRecording(self.name, request)
 
@@ -70,8 +73,7 @@ class BaseService:
             and incoming_request.body == recorded_request.body
         )
 
-    def get_responses_for_active_scenario(self) \
-            -> List[Tuple[MITMRequest, MITMResponse]]:
+    def get_interactions_for_active_scenario(self) -> List[Interaction]:
         """Get a list of scenarios"""
         if not self.active_scenario:
             raise ScenarioUndefined(self.name)
@@ -83,13 +85,18 @@ class BaseService:
             raise ScenarioNotFound(self.name, self.active_scenario)
 
         responses = [
-            yaml_load(response.read_text()) for response in responses_dir.iterdir()
+            self._get_interaction_from_file(response)
+            for response in responses_dir.iterdir()
             if response.is_file() and response.suffix == '.yaml'
         ]
 
-        responses = [
-            (MITMRequest.from_dict(v['request']), MITMResponse.from_dict(v['response']))
-            for v in responses
-        ]
-
         return responses
+
+    @staticmethod
+    def _get_interaction_from_file(response_file: Path) -> Interaction:
+        text = response_file.read_text()  # type: ignore
+        pair = yaml_load(text)
+        return {
+            'request': MITMRequest.from_dict(pair['request']),
+            'response': MITMResponse.from_dict(pair['response']),
+        }

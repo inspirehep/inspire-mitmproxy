@@ -146,49 +146,47 @@ def test_management_service_get_config(dispatcher):
 
 
 def test_management_service_post_and_put_config(dispatcher):
-    post_req = dispatcher.process_request(
-        MITMRequest(
-            method='POST',
-            url='http://mitm-manager.local/config',
-            body='{"active_scenario": "a scenario", "another": "value"}',
-            headers=MITMHeaders({
-                'Host': ['mitm-manager.local'],
-                'Accept': ['application/json'],
-            })
-        )
+    post_config_request = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "a scenario", "another": "value"}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
     )
 
-    assert post_req.status_code == 201
-
-    put_req = dispatcher.process_request(
-        MITMRequest(
-            method='PUT',
-            url='http://mitm-manager.local/config',
-            body='{"active_scenario": "another scenario"}',
-            headers=MITMHeaders({
-                'Host': ['mitm-manager.local'],
-                'Accept': ['application/json'],
-            })
-        )
+    put_config_request = MITMRequest(
+        method='PUT',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "another scenario"}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
     )
 
-    assert put_req.status_code == 204
-
-    result = dispatcher.process_request(
-        MITMRequest(
-            method='GET',
-            url='http://mitm-manager.local/config',
-            headers=MITMHeaders({
-                'Host': ['mitm-manager.local'],
-                'Accept': ['application/json'],
-            })
-        )
+    get_config_request = MITMRequest(
+        method='GET',
+        url='http://mitm-manager.local/config',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
     )
 
-    expected = {
+    expected_config = {
         'active_scenario': 'another scenario',
         'another': 'value',
     }
 
+    post_req = dispatcher.process_request(post_config_request)
+    assert post_req.status_code == 201
+
+    put_req = dispatcher.process_request(put_config_request)
+    assert put_req.status_code == 204
+
+    result = dispatcher.process_request(get_config_request)
     assert result.status_code == 200
-    assert json_loads(result.body) == expected
+
+    assert json_loads(result.body) == expected_config

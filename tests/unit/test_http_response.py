@@ -25,6 +25,7 @@ from mitmproxy.net.http.headers import Headers
 
 from inspire_mitmproxy.http import MITMHeaders, MITMResponse
 
+
 TEST_DICT_RESPONSE = {
     'status': {
         'code': 200,

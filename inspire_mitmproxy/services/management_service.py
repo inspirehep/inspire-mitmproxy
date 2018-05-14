@@ -25,12 +25,12 @@
 from json import JSONDecodeError
 from json import dumps as json_dumps
 from json import loads as json_loads
-from os import environ, getcwd
+from os import environ
 from pathlib import Path
 from typing import Dict, List, Optional, Union, cast
 from urllib.parse import urlparse
 
-from autosemver import get_current_version
+from autosemver.packaging import get_current_version
 
 from ..errors import InvalidRequest, RequestNotHandledInService
 from ..http import MITMHeaders, MITMRequest, MITMResponse
@@ -119,7 +119,9 @@ class ManagementService(BaseService):
             body=body,
             headers=MITMHeaders({
                 'Content-Type': ['application/json; encoding=UTF-8'],
-                'Server': ['inspire-mitmproxy/' + get_current_version(getcwd())]
+                'Server': [
+                    'inspire-mitmproxy/' + get_current_version(project_name='inspire_mitmproxy')
+                ]
             }),
         )
 

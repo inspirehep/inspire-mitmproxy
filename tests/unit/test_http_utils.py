@@ -22,6 +22,7 @@
 
 from inspire_mitmproxy.http import MITMHeaders, encoding_by_header
 
+
 TEST_HEADERS = MITMHeaders({
     'Content-Type': ['text/plain; charset=ASCII'],
     'Access-Control-Expose-Headers': [

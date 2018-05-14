@@ -24,6 +24,7 @@ from mitmproxy.http import HTTPRequest
 
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest
 
+
 TEST_REQUEST = MITMRequest(
     body='{"message": "Witaj, świecie!"}',
     headers=MITMHeaders({

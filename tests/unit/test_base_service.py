@@ -91,10 +91,10 @@ def test_base_service_handles_request(service: BaseService, request_: dict, hand
 
 
 def test_base_service_get_responses_for_active_scenario(service: BaseService, scenarios_dir):
-    result = service.get_responses_for_active_scenario()
+    result = service.get_interactions_for_active_scenario()
     expected = [
-        (
-            MITMRequest(
+        {
+            'request': MITMRequest(
                 body='{"value": "response2"}',
                 headers=MITMHeaders({
                     'Accept': ['application/json'],
@@ -105,15 +105,15 @@ def test_base_service_get_responses_for_active_scenario(service: BaseService, sc
                 method='POST',
                 url='https://host_a.local/api',
             ),
-            MITMResponse(
+            'response': MITMResponse(
                 body=None,
                 headers=MITMHeaders({
                     'content-type': ['application/json; charset=UTF-8']
                 }),
                 status_code=201,
             ),
-        ), (
-            MITMRequest(
+        }, {
+            'request': MITMRequest(
                 headers=MITMHeaders({
                     'Accept': ['application/json'],
                     'Accept-Encoding': ['gzip, deflate'],
@@ -123,14 +123,14 @@ def test_base_service_get_responses_for_active_scenario(service: BaseService, sc
                 method='GET',
                 url='https://host_a.local/api',
             ),
-            MITMResponse(
+            'response': MITMResponse(
                 body='{"value": "response1"}',
                 headers=MITMHeaders({
                     'content-type': ['application/json; charset=UTF-8']
                 }),
                 status_code=200,
             )
-        ),
+        },
     ]
 
     assert expected == result
