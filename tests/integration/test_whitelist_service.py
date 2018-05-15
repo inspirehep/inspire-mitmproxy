@@ -27,7 +27,8 @@ from pytest import fixture, raises
 
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import DoNotIntercept
-from inspire_mitmproxy.whitelist_service import WhitelistService
+from inspire_mitmproxy.http import MITMHeaders, MITMRequest
+from inspire_mitmproxy.services.whitelist_service import WhitelistService
 
 
 @fixture(scope='function')
@@ -38,12 +39,14 @@ def dispatcher() -> Dispatcher:
 
 def test_whitelist_service_raises(dispatcher):
     with raises(DoNotIntercept):
-        dispatcher.process_request({
-            'method': 'GET',
-            'uri': 'http://indexer:9200/records-hep/fake',
-            'body': '{}',
-            'headers': {
-                'Host': ['indexer:9200'],
-                'Accept': ['application/json'],
-            }
-        })
+        dispatcher.process_request(
+            MITMRequest(
+                method='GET',
+                url='http://indexer:9200/records-hep/fake',
+                body="{}",
+                headers=MITMHeaders({
+                    'Host': ['indexer:9200'],
+                    'Accept': ['application/json'],
+                })
+            )
+        )

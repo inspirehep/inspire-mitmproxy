@@ -26,6 +26,7 @@ from typing import List
 
 from setuptools import setup
 
+
 readme = open('README.rst').read()
 
 setup_requires = [

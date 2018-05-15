@@ -28,8 +28,8 @@ from mock import patch
 from pytest import fixture, mark, raises
 
 from inspire_mitmproxy.errors import InvalidRequest
-from inspire_mitmproxy.management_service import ManagementService
-from inspire_mitmproxy.services import BaseService
+from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
+from inspire_mitmproxy.services import BaseService, ManagementService
 
 
 @fixture(scope='function')
@@ -116,9 +116,12 @@ def test_management_service_get_config(management_service):
 
 
 def test_management_service_put_config(management_service):
-    management_service.put_config({
-        'body': '{"active_scenario": "a scenario"}'
-    })
+    management_service.put_config(
+        MITMRequest(
+            url='http://mitm-manager.local/config',
+            body='{"active_scenario": "a scenario"}'
+        )
+    )
     result = management_service.config
 
     expected = {
@@ -133,21 +136,30 @@ def test_management_service_put_config(management_service):
 
 
 @mark.parametrize(
-    '_request',
+    'request_body',
     [
-        {'body': 'definitely not valid JSON'},
-        {'body': '["parses as valid json, but is not a dict update"]'},
+        'definitely not valid JSON',
+        '["parses as valid json, but is not a dict update"]',
     ],
 )
-def test_management_service_put_config_malformed_raises(management_service, _request):
+def test_management_service_put_config_malformed_raises(management_service, request_body):
+    request = MITMRequest(
+        method='PUT',
+        url='http://mitm-manager.local',
+        body=request_body,
+    )
     with raises(InvalidRequest):
-        management_service.put_config(_request)
+        management_service.put_config(request)
 
 
 def test_management_service_post_config(management_service):
-    management_service.post_config({
-        'body': '{"active_scenario": "a scenario"}'
-    })
+    management_service.post_config(
+        MITMRequest(
+            method='POST',
+            url='http://mitm-manager.local/config',
+            body='{"active_scenario": "a scenario"}',
+        )
+    )
     result = management_service.config
 
     expected = {
@@ -162,9 +174,13 @@ def test_management_service_post_config(management_service):
 
 def test_management_service_post_config_malformed_raises(management_service):
     with raises(InvalidRequest):
-        management_service.post_config({
-            'body': 'definitely not valid JSON'
-        })
+        management_service.put_config(
+            MITMRequest(
+                method='POST',
+                url='http://mitm-manager.local/config',
+                body='definitely not valid JSON',
+            )
+        )
 
 
 @mark.xfail
@@ -176,19 +192,19 @@ def test_management_service_post_config_array_raises(management_service):
 
 
 def test_management_service_build_response(management_service):
-    with patch('inspire_mitmproxy.management_service.get_current_version', return_value='0.0.1'):
+    with patch(
+        'inspire_mitmproxy.services.management_service.get_current_version',
+        return_value='0.0.1',
+    ):
         result = management_service.build_response(201, json_message={'test': 'message'})
 
-    expected = {
-        'body': '{\n  "test": "message"\n}',
-        'headers': {
-            'Content-Type': ['application/json'],
+    expected = MITMResponse(
+        body='{\n  "test": "message"\n}',
+        headers=MITMHeaders({
+            'Content-Type': ['application/json; encoding=UTF-8'],
             'Server': ['inspire-mitmproxy/0.0.1'],
-        },
-        'status': {
-            'code': 201,
-            'message': 'Created',
-        }
-    }
+        }),
+        status_code=201,
+    )
 
     assert expected == result

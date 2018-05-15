@@ -30,6 +30,7 @@ from mock import patch
 from pytest import fixture
 
 from inspire_mitmproxy.dispatcher import Dispatcher
+from inspire_mitmproxy.http import MITMHeaders, MITMRequest
 from inspire_mitmproxy.services import BaseService
 
 
@@ -68,15 +69,16 @@ def fake_scenarios_dir(tmpdir) -> str:
 
 
 def test_management_service_get_services(dispatcher):
-    result = dispatcher.process_request({
-        'method': 'GET',
-        'uri': 'http://mitm-manager.local/services',
-        'body': None,
-        'headers': {
-            'Host': ['mitm-manager.local'],
-            'Accept': ['application/json'],
-        }
-    })
+    result = dispatcher.process_request(
+        MITMRequest(
+            method='GET',
+            url='http://mitm-manager.local/services',
+            headers=MITMHeaders({
+                'Host': ['mitm-manager.local'],
+                'Accept': ['application/json'],
+            })
+        )
+    )
 
     expected = {
         '0': {
@@ -89,20 +91,21 @@ def test_management_service_get_services(dispatcher):
         },
     }
 
-    assert result['status'] == {'code': 200, 'message': 'OK'}
-    assert json_loads(result['body']) == expected
+    assert result.status_code == 200
+    assert json_loads(result.body) == expected
 
 
 def test_management_service_get_scenarios(fake_scenarios_dir, dispatcher):
-    result = dispatcher.process_request({
-        'method': 'GET',
-        'uri': 'http://mitm-manager.local/scenarios',
-        'body': None,
-        'headers': {
-            'Host': ['mitm-manager.local'],
-            'Accept': ['application/json'],
-        }
-    })
+    result = dispatcher.process_request(
+        MITMRequest(
+            method='GET',
+            url='http://mitm-manager.local/scenarios',
+            headers=MITMHeaders({
+                'Host': ['mitm-manager.local'],
+                'Accept': ['application/json'],
+            })
+        )
+    )
 
     expected = {
         'scenario1': {
@@ -118,68 +121,72 @@ def test_management_service_get_scenarios(fake_scenarios_dir, dispatcher):
         },
     }
 
-    assert result['status'] == {'code': 200, 'message': 'OK'}
-    assert json_loads(result['body']) == expected
+    assert result.status_code == 200
+    assert json_loads(result.body) == expected
 
 
 def test_management_service_get_config(dispatcher):
-    result = dispatcher.process_request({
-        'method': 'GET',
-        'uri': 'http://mitm-manager.local/config',
-        'body': None,
-        'headers': {
-            'Host': ['mitm-manager.local'],
-            'Accept': ['application/json'],
-        }
-    })
+    result = dispatcher.process_request(
+        MITMRequest(
+            method='GET',
+            url='http://mitm-manager.local/config',
+            headers=MITMHeaders({
+                'Host': ['mitm-manager.local'],
+                'Accept': ['application/json'],
+            })
+        )
+    )
 
     expected = {
         'active_scenario': None,
     }
 
-    assert result['status'] == {'code': 200, 'message': 'OK'}
-    assert json_loads(result['body']) == expected
+    assert result.status_code == 200
+    assert json_loads(result.body) == expected
 
 
 def test_management_service_post_and_put_config(dispatcher):
-    post_req = dispatcher.process_request({
-        'method': 'POST',
-        'uri': 'http://mitm-manager.local/config',
-        'body': '{"active_scenario": "a scenario", "another": "value"}',
-        'headers': {
+    post_config_request = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "a scenario", "another": "value"}',
+        headers=MITMHeaders({
             'Host': ['mitm-manager.local'],
             'Accept': ['application/json'],
-        }
-    })
+        })
+    )
 
-    assert post_req['status'] == {'code': 201, 'message': 'Created'}
-
-    put_req = dispatcher.process_request({
-        'method': 'PUT',
-        'uri': 'http://mitm-manager.local/config',
-        'body': '{"active_scenario": "another scenario"}',
-        'headers': {
+    put_config_request = MITMRequest(
+        method='PUT',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "another scenario"}',
+        headers=MITMHeaders({
             'Host': ['mitm-manager.local'],
             'Accept': ['application/json'],
-        }
-    })
+        })
+    )
 
-    assert put_req['status'] == {'code': 204, 'message': 'No Content'}
-
-    result = dispatcher.process_request({
-        'method': 'GET',
-        'uri': 'http://mitm-manager.local/config',
-        'body': None,
-        'headers': {
+    get_config_request = MITMRequest(
+        method='GET',
+        url='http://mitm-manager.local/config',
+        headers=MITMHeaders({
             'Host': ['mitm-manager.local'],
             'Accept': ['application/json'],
-        }
-    })
+        })
+    )
 
-    expected = {
+    expected_config = {
         'active_scenario': 'another scenario',
         'another': 'value',
     }
 
-    assert result['status'] == {'code': 200, 'message': 'OK'}
-    assert json_loads(result['body']) == expected
+    post_req = dispatcher.process_request(post_config_request)
+    assert post_req.status_code == 201
+
+    put_req = dispatcher.process_request(put_config_request)
+    assert put_req.status_code == 204
+
+    result = dispatcher.process_request(get_config_request)
+    assert result.status_code == 200
+
+    assert json_loads(result.body) == expected_config

@@ -24,6 +24,7 @@
 
 from inspire_mitmproxy.dispatcher import Dispatcher
 
+
 dispatcher = Dispatcher()
 
 addons = [dispatcher]

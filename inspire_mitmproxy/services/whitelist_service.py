@@ -22,8 +22,9 @@
 
 """Service which allows all requests outside"""
 
-from .errors import DoNotIntercept
-from .services import BaseService
+from ..errors import DoNotIntercept
+from ..http import MITMRequest
+from ..services import BaseService
 
 
 class WhitelistService(BaseService):
@@ -32,5 +33,5 @@ class WhitelistService(BaseService):
         'test-indexer',
     ]
 
-    def process_request(self, request: dict):
+    def process_request(self, request: MITMRequest):
         raise DoNotIntercept(self.name, request)
