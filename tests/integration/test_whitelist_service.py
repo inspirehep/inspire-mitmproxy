@@ -42,10 +42,10 @@ def test_whitelist_service_raises(dispatcher):
         dispatcher.process_request(
             MITMRequest(
                 method='GET',
-                url='http://indexer:9200/records-hep/fake',
+                url='http://test-indexer:9200/records-hep/fake',
                 body="{}",
                 headers=MITMHeaders({
-                    'Host': ['indexer:9200'],
+                    'Host': ['test-indexer:9200'],
                     'Accept': ['application/json'],
                 })
             )

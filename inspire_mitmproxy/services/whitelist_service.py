@@ -29,8 +29,10 @@ from ..services import BaseService
 
 class WhitelistService(BaseService):
     SERVICE_HOSTS = [
-        'indexer',
         'test-indexer',
+        'test-scrapyd',
+        'test-web-e2e.local',
+        'fake-legacy',
     ]
 
     def process_request(self, request: MITMRequest):
