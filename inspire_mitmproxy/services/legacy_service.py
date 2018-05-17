@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of INSPIRE-MITMROXY.
+# This file is part of INSPIRE-MITMPROXY.
 # Copyright (C) 2018 CERN.
 #
 # INSPIRE is free software: you can redistribute it and/or modify
@@ -20,19 +20,10 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-"""Service which allows all requests outside"""
+"""Fake Service for Arxiv."""
 
-from ..errors import DoNotIntercept
-from ..http import MITMRequest
-from ..services import BaseService
+from .base_service import BaseService
 
 
-class WhitelistService(BaseService):
-    SERVICE_HOSTS = [
-        'test-indexer',
-        'test-scrapyd',
-        'test-web-e2e.local',
-    ]
-
-    def process_request(self, request: MITMRequest):
-        raise DoNotIntercept(self.name, request)
+class LegacyService(BaseService):
+    SERVICE_HOSTS = ['inspirehep.net']

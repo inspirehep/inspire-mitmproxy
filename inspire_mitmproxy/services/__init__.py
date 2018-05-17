@@ -24,5 +24,6 @@
 
 from .arxiv_service import ArxivService  # noqa: F401
 from .base_service import BaseService  # noqa: F401
+from .legacy_service import LegacyService  # noqa: F401
 from .management_service import ManagementService  # noqa: F401
 from .whitelist_service import WhitelistService  # noqa: F401
