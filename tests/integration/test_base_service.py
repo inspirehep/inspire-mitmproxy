@@ -98,10 +98,10 @@ def test_base_service_process_request_scenario1(dispatcher, request):
     assert response_set_config.status_code == 201
 
     response_service_1 = dispatcher.process_request(request_service_1)
-    assert response_service_1.body == 'test_scenario1/TestServiceA/0'
+    assert response_service_1.body == b'test_scenario1/TestServiceA/0'
 
     response_service_2 = dispatcher.process_request(request_service_2)
-    assert response_service_2.body == 'test_scenario1/TestServiceB/0'
+    assert response_service_2.body == b'test_scenario1/TestServiceB/0'
 
 
 def test_base_service_process_request_scenario2_and_raise(dispatcher, request):
@@ -137,7 +137,7 @@ def test_base_service_process_request_scenario2_and_raise(dispatcher, request):
     assert response_set_config.status_code == 201
 
     response_service_1 = dispatcher.process_request(request_service_1)
-    assert response_service_1.body == 'test_scenario2/TestServiceA/0'
+    assert response_service_1.body == b'test_scenario2/TestServiceA/0'
 
     with raises(ScenarioNotFound):
         dispatcher.process_request(request_service_2)

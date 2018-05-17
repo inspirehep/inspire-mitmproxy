@@ -38,6 +38,19 @@ TEST_REQUEST = MITMRequest(
 )
 
 
+TEST_REQUEST_WITH_BYTES_BODY = MITMRequest(
+    body=b'{"message": "Witaj, \xc5\x9bwiecie!"}',
+    headers=MITMHeaders({
+        'Content-Type': ['application/json; charset=UTF-8'],
+        'Accept-Encoding': ['gzip, deflate'],
+        'Connection': ['keep-alive'],
+        'User-Agent': ['python-requests/2.18.4'],
+    }),
+    method='GET',
+    url='http://127.0.0.1/test'
+)
+
+
 TEST_DICT_REQUEST = {
     'body': '{"message": "Witaj, świecie!"}',
     'headers': {
@@ -95,3 +108,7 @@ def test_request_to_dict():
     expected = TEST_DICT_REQUEST
 
     assert result == expected
+
+
+def test_request_with_bytes_body():
+    assert TEST_REQUEST == TEST_REQUEST_WITH_BYTES_BODY

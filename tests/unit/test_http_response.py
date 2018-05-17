@@ -80,6 +80,19 @@ TEST_RESPONSE = MITMResponse(
     http_version='HTTP/1.1',
 )
 
+TEST_RESPONSE_WITH_BYTES_BODY = MITMResponse(
+    status_code=200,
+    status_message='OK',
+    body=b"Witaj, \xb6wiecie!",
+    headers=MITMHeaders({
+        'Content-Type': ['text/plain; charset=ISO-8859-2'],
+        'Date': ['Wed, 21 Mar 2018 12:47:18 GMT'],
+        'Server': ['nginx/1.12.2'],
+    }),
+    original_encoding='ISO-8859-2',
+    http_version='HTTP/1.1',
+)
+
 
 def test_response_from_mitmproxy():
     result = MITMResponse.from_mitmproxy(TEST_MITM_RESPONSE)
@@ -109,8 +122,12 @@ def test_response_to_dict():
     assert result == expected
 
 
-def test_responses_from_bytes_and_str_equal():
+def test_dict_responses_from_bytes_and_str_equal():
     result_from_string = MITMResponse.from_dict(TEST_DICT_RESPONSE)
     result_from_bytes = MITMResponse.from_dict(TEST_DICT_RESPONSE_WITH_BYTES_BODY)
 
     assert result_from_string == result_from_bytes
+
+
+def test_responses_from_bytes_and_str_equal():
+    assert TEST_RESPONSE == TEST_RESPONSE_WITH_BYTES_BODY

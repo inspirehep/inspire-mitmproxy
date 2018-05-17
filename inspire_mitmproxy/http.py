@@ -25,7 +25,7 @@
 from cgi import parse_header
 from copy import copy, deepcopy
 from socket import getservbyname
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 from mitmproxy.http import HTTPRequest, HTTPResponse
@@ -100,17 +100,23 @@ class MITMRequest:
         self,
         url: str,
         method: str = 'GET',
-        body: Optional[str] = None,
+        body: Optional[Union[str, bytes]] = None,
         headers: Optional[MITMHeaders] = None,
         original_encoding: Optional[str] = None,
         http_version: Optional[str] = None,
     ) -> None:
         self.url = url
         self.method = method
-        self.body = body or ''
         self.headers = headers or MITMHeaders({})
-        self.original_encoding = original_encoding or encoding_by_header(self.headers)
         self.http_version = http_version or 'HTTP/1.1'
+        self.original_encoding = original_encoding or encoding_by_header(self.headers)
+
+        if isinstance(body, str):
+            self.body = body.encode(self.original_encoding)
+        elif isinstance(body, bytes):
+            self.body = body
+        else:
+            self.body = b''
 
     @classmethod
     def from_mitmproxy(cls, request: HTTPRequest) -> 'MITMRequest':
@@ -119,7 +125,7 @@ class MITMRequest:
         return cls(
             url=request.url,
             method=request.method,
-            body=request.content.decode(encoding),
+            body=request.content,
             headers=MITMHeaders.from_mitmproxy(request.headers),
             original_encoding=encoding,
             http_version=request.http_version,
@@ -149,14 +155,14 @@ class MITMRequest:
             path=parsed_url.path,
             http_version=self.http_version,
             headers=self.headers.to_mitmproxy(),
-            content=self.body.encode(self.original_encoding),
+            content=self.body,
         )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             'method': self.method,
             'uri': self.url,
-            'body': self.body,
+            'body': self.body.decode(self.original_encoding),
             'headers': self.headers.to_dict(),
         }
 
@@ -178,17 +184,23 @@ class MITMResponse:
         self,
         status_code: int = 200,
         status_message: Optional[str] = None,
-        body: Optional[str] = None,
+        body: Optional[Union[str, bytes]] = None,
         headers: Optional[MITMHeaders] = None,
         original_encoding: Optional[str] = None,
         http_version: Optional[str] = None,
     ) -> None:
         self.status_code = status_code
         self.status_message = status_message or RESPONSES[status_code]
-        self.body = body or ''
         self.headers = headers or MITMHeaders({})
         self.http_version = http_version or 'HTTP/1.1'
         self.original_encoding = original_encoding or encoding_by_header(self.headers)
+
+        if isinstance(body, str):
+            self.body = body.encode(self.original_encoding)
+        elif isinstance(body, bytes):
+            self.body = body
+        else:
+            self.body = b''
 
     @classmethod
     def from_mitmproxy(cls, response: HTTPResponse) -> 'MITMResponse':
@@ -205,18 +217,11 @@ class MITMResponse:
 
     @classmethod
     def from_dict(cls, response: Dict[str, Any]) -> 'MITMResponse':
-        encoding = encoding_by_header(MITMHeaders.from_dict(response['headers']))
-
-        body = response['body']
-        if isinstance(body, bytes):
-            body = body.decode(encoding)
-
         return cls(
             status_code=response['status']['code'],
             status_message=response['status']['message'],
-            body=body,
+            body=response['body'],
             headers=MITMHeaders.from_dict(response['headers']),
-            original_encoding=encoding
         )
 
     def to_mitmproxy(self) -> HTTPResponse:
@@ -225,7 +230,7 @@ class MITMResponse:
             status_code=self.status_code,
             reason=self.status_message,
             headers=self.headers.to_mitmproxy(),
-            content=self.body.encode(self.original_encoding),
+            content=self.body,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -234,7 +239,7 @@ class MITMResponse:
                 'code': self.status_code,
                 'message': self.status_message,
             },
-            'body': self.body,
+            'body': self.body.decode(self.original_encoding),
             'headers': self.headers.to_dict(),
         }
 

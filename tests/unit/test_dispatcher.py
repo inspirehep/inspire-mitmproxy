@@ -57,9 +57,9 @@ def dispatcher():
 @mark.parametrize(
     'url, message',
     [
-        ('http://test-service-a.local', 'TestServiceA'),
-        ('http://test-service-b.local/some_path', 'TestServiceB'),
-        ('http://test-service-a.local/other_path', 'TestServiceA'),
+        ('http://test-service-a.local', b'TestServiceA'),
+        ('http://test-service-b.local/some_path', b'TestServiceB'),
+        ('http://test-service-a.local/other_path', b'TestServiceA'),
     ],
     ids=[
         'first',
