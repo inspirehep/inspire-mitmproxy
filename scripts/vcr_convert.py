@@ -62,4 +62,8 @@ for cassette_file in sys.argv[1:-1]:
         if interaction['response']['body'] is not None:
             interaction['response']['body'] = interaction['response']['body']['string']
 
+        # Rename VCR's 'uri' to 'url'
+        interaction['request']['url'] = interaction['request']['uri']
+        del interaction['request']['uri']
+
         output.write_text(yaml.dump(interaction))

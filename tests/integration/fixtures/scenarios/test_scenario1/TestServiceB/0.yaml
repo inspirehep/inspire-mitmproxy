@@ -3,7 +3,7 @@ request:
   headers:
     Accept: [application/json]
   method: GET
-  uri: https://host_b.local/api
+  url: https://host_b.local/api
 response:
   body: !!python/unicode 'test_scenario1/TestServiceB/0'
   headers:

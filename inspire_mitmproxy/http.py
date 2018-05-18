@@ -136,7 +136,7 @@ class MITMRequest:
         encoding = encoding_by_header(MITMHeaders.from_dict(request['headers']))
 
         return cls(
-            url=request['uri'],
+            url=request['url'],
             method=request['method'],
             body=request['body'],
             headers=MITMHeaders.from_dict(request['headers']),
@@ -161,7 +161,7 @@ class MITMRequest:
     def to_dict(self) -> Dict[str, Any]:
         return {
             'method': self.method,
-            'uri': self.url,
+            'url': self.url,
             'body': self.body.decode(self.original_encoding),
             'headers': self.headers.to_dict(),
         }
@@ -177,6 +177,9 @@ class MITMRequest:
     def __repr__(self):
         return f'MITMRequest("{self.url}", "{self.method}", ' \
             f'headers={repr(self.headers)}, body="{self.body}")'
+
+    def __getitem__(self, field: str):
+        return getattr(self, field)
 
 
 class MITMResponse:

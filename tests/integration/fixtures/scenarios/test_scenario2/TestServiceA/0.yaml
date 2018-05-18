@@ -1,9 +1,9 @@
 request:
-  body: null
+  body: 'correct body content'
   headers:
     Accept: [application/json]
   method: GET
-  uri: https://host_a.local/api
+  url: https://host_a.local/api
 response:
   body: !!python/unicode 'test_scenario2/TestServiceA/0'
   headers:
