@@ -49,15 +49,56 @@ TEST_MITM_HEADERS = Headers(
 )
 
 
-def test_dict_to_headers():
-    expected = TEST_MITM_HEADERS
-    result = MITMHeaders.from_dict(TEST_DICT_HEADERS).to_mitmproxy()
+TEST_HEADERS = MITMHeaders(headers={
+    'Content-Type': ['text/plain; charset=ASCII'],
+    'Access-Control-Expose-Headers': [
+        'Content-Type, ETag, Link, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, '
+        'X-Multiple-Values',
+    ],
+    'X-Multiple-Values': [
+        'Value1',
+        'Value2',
+    ]
+})
+
+
+def test_headers_from_dict():
+    expected = TEST_HEADERS
+    result = MITMHeaders.from_dict(TEST_DICT_HEADERS)
+
+    assert expected == result
+
+
+def test_headers_from_mitmproxy():
+    expected = TEST_HEADERS
+    result = MITMHeaders.from_mitmproxy(TEST_MITM_HEADERS)
 
     assert expected == result
 
 
 def test_headers_to_dict():
     expected = TEST_DICT_HEADERS
-    result = MITMHeaders.from_mitmproxy(TEST_MITM_HEADERS).to_dict()
+    result = TEST_HEADERS.to_dict()
 
     assert expected == result
+
+
+def test_headers_to_mitmproxy():
+    expected = TEST_MITM_HEADERS
+    result = TEST_HEADERS.to_mitmproxy()
+
+    assert expected == result
+
+
+def test_headers_getitem():
+    expected = 'Value1'
+    result = TEST_HEADERS['X-Multiple-Values']
+
+    assert expected == result
+
+
+def test_headers_keys():
+    expected = ['Content-Type', 'Access-Control-Expose-Headers', 'X-Multiple-Values']
+    result = TEST_HEADERS.keys()
+
+    assert expected == list(result)

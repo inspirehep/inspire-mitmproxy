@@ -24,7 +24,7 @@
 
 from os import environ
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import List, Optional
 from urllib.parse import splitport  # type: ignore
 from urllib.parse import urlparse
 
@@ -55,7 +55,9 @@ class BaseService:
         """Perform operations and give response."""
         for interaction in self.get_interactions_for_active_scenario():
             if interaction.matches_request(request):
-                return cast(MITMResponse, interaction.response)
+                response = interaction.response
+                interaction.execute_callbacks()
+                return response
 
         raise NoMatchingRecording(self.name, request)
 

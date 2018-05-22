@@ -23,6 +23,7 @@
 """Tests for the WhitelistService"""
 
 from os import environ
+from time import sleep
 
 from mock import patch
 from pytest import fixture, raises
@@ -134,8 +135,12 @@ def test_base_service_process_request_scenario2_and_raise(dispatcher, request):
         })
     )
 
-    response_set_config = dispatcher.process_request(request_set_config)
-    assert response_set_config.status_code == 201
+    with patch('requests.request') as request_func:
+        response_set_config = dispatcher.process_request(request_set_config)
+        assert response_set_config.status_code == 201
+
+        sleep(1)
+        request_func.assert_called_once()
 
     response_service_1 = dispatcher.process_request(request_service_1)
     assert response_service_1.body == b'test_scenario2/TestServiceA/0'
