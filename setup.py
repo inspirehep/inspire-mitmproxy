@@ -38,6 +38,7 @@ install_requires = [
     'mitmproxy~=3.0,>=3.0.4',
     'pathlib~=1.0,>=1.0.1',
     'pyyaml~=3.0,>=3.12',
+    'requests~=2.0,>=2.18.4',
 ]
 
 tests_require = [

@@ -24,8 +24,10 @@
 
 from pathlib import Path
 from re import compile
-from typing import Dict, List, Optional, Pattern
+from threading import Timer
+from typing import Dict, List, Optional, Pattern, Union
 
+import requests
 from yaml import load as yaml_load
 
 from .http import MITMRequest, MITMResponse
@@ -34,11 +36,19 @@ from .http import MITMRequest, MITMResponse
 class Interaction:
     DEFAULT_EXACT_MATCH_FIELDS: List[str] = ['url', 'method', 'body']
     DEFAULT_REGEX_MATCH_FIELDS: Dict[str, Pattern[str]] = {}
+    DEFAULT_CALLBACK_DELAY = 0.5
 
-    def __init__(self, request: MITMRequest, response: MITMResponse, match: dict) -> None:
+    def __init__(
+        self,
+        request: MITMRequest,
+        response: MITMResponse,
+        match: Optional[dict],
+        callbacks: Optional[List[dict]],
+    ) -> None:
         self.request = request
         self.response = response
-        self.match = match
+        self.match = match or {}
+        self.callbacks = callbacks or []
 
     @classmethod
     def from_file(cls, interaction_file: Optional[Path]) -> 'Interaction':
@@ -49,6 +59,7 @@ class Interaction:
             request=MITMRequest.from_dict(interaction_dict['request']),
             response=MITMResponse.from_dict(interaction_dict['response']),
             match=interaction_dict.get('match'),
+            callbacks=interaction_dict.get('callbacks'),
         )
 
     @property
@@ -88,3 +99,25 @@ class Interaction:
 
     def matches_request(self, request: MITMRequest) -> bool:
         return self._matches_by_exact_rules(request) and self._matches_by_regex_rules(request)
+
+    @staticmethod
+    def execute_callback(request: MITMRequest, delay: Union[int, float]):
+        def execute_request(_request: MITMRequest):
+            requests.request(
+                method=request.method,
+                url=request.url,
+                data=request.body,
+                headers={key: request.headers[key] for key in request.headers.keys()},
+                timeout=10,
+            )
+
+        timer = Timer(delay, execute_request, args=[request])
+        timer.start()
+
+    def execute_callbacks(self):
+        for callback in self.callbacks:
+            request = MITMRequest.from_dict(callback['request'])
+            self.execute_callback(
+                request=request,
+                delay=callback.get('delay', self.DEFAULT_CALLBACK_DELAY)
+            )

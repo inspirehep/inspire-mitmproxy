@@ -25,7 +25,7 @@
 from cgi import parse_header
 from copy import copy, deepcopy
 from socket import getservbyname
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, KeysView, List, Optional, Union
 from urllib.parse import urlparse
 
 from mitmproxy.http import HTTPRequest, HTTPResponse
@@ -81,6 +81,9 @@ class MITMHeaders:
                 )
 
         return Headers(fields=fields)
+
+    def keys(self) -> KeysView[str]:
+        return self.headers.keys()
 
     def __getitem__(self, item: str) -> str:
         try:

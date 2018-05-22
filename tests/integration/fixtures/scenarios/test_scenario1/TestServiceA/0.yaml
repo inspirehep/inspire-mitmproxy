@@ -9,3 +9,10 @@ response:
   headers:
     content-type: [application/json]
   status: {code: 200, message: OK}
+callbacks:
+- delay: 0.5
+  request:
+    body: null
+    headers: {}
+    method: 'GET'
+    url: http://callback.local/
