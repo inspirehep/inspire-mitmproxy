@@ -66,12 +66,12 @@ def sample_request(request) -> MITMRequest:
 @mark.parametrize(
     'request_, handled',
     [
-        ({'uri': 'http://host_a.local/api', 'headers': {'Host': ['host_a.local']}}, True),
-        ({'uri': 'http://host_b.local/api', 'headers': {'Host': ['host_b.local']}}, True),
-        ({'uri': 'http://wrong.local/api', 'headers': {'Host': ['host_a.local']}}, True),
-        ({'uri': 'http://host_a.local/api', 'headers': {'Host': ['wrong.local']}}, False),
-        ({'uri': 'http://host_a.local/api', 'headers': {}}, True),
-        ({'uri': 'http://wrong.local/api', 'headers': {'Host': ['wrong.local']}}, False),
+        ({'url': 'http://host_a.local/api', 'headers': {'Host': ['host_a.local']}}, True),
+        ({'url': 'http://host_b.local/api', 'headers': {'Host': ['host_b.local']}}, True),
+        ({'url': 'http://wrong.local/api', 'headers': {'Host': ['host_a.local']}}, True),
+        ({'url': 'http://host_a.local/api', 'headers': {'Host': ['wrong.local']}}, False),
+        ({'url': 'http://host_a.local/api', 'headers': {}}, True),
+        ({'url': 'http://wrong.local/api', 'headers': {'Host': ['wrong.local']}}, False),
     ],
     ids=[
         'check first, Host and URI matching: should be handled',
@@ -84,157 +84,58 @@ def sample_request(request) -> MITMRequest:
 )
 def test_base_service_handles_request(service: BaseService, request_: dict, handled: bool):
     request_ = MITMRequest(
-        url=request_['uri'],
+        url=request_['url'],
         headers=MITMHeaders(request_['headers']),
     )
     assert service.handles_request(request_) == handled
 
 
-def test_base_service_get_responses_for_active_scenario(service: BaseService, scenarios_dir):
-    result = service.get_interactions_for_active_scenario()
-    expected = [
-        {
-            'request': MITMRequest(
-                body='{"value": "response2"}',
-                headers=MITMHeaders({
-                    'Accept': ['application/json'],
-                    'Accept-Encoding': ['gzip, deflate'],
-                    'Connection': ['keep-alive'],
-                    'User-Agent': ['python-requests/2.18.4']
-                }),
-                method='POST',
-                url='https://host_a.local/api',
-            ),
-            'response': MITMResponse(
-                body=None,
-                headers=MITMHeaders({
-                    'content-type': ['application/json; charset=UTF-8']
-                }),
-                status_code=201,
-            ),
-        }, {
-            'request': MITMRequest(
-                headers=MITMHeaders({
-                    'Accept': ['application/json'],
-                    'Accept-Encoding': ['gzip, deflate'],
-                    'Connection': ['keep-alive'],
-                    'User-Agent': ['python-requests/2.18.4']
-                }),
-                method='GET',
-                url='https://host_a.local/api',
-            ),
-            'response': MITMResponse(
-                body='{"value": "response1"}',
-                headers=MITMHeaders({
-                    'content-type': ['application/json; charset=UTF-8']
-                }),
-                status_code=200,
-            )
-        },
-    ]
+def test_base_service_get_interactions_for_active_scenario(service: BaseService, scenarios_dir):
+    expected_request_1 = MITMRequest(
+        headers=MITMHeaders({
+            'Accept': ['application/json'],
+            'Accept-Encoding': ['gzip, deflate'],
+            'Connection': ['keep-alive'],
+            'User-Agent': ['python-requests/2.18.4']
+        }),
+        method='GET',
+        url='https://host_a.local/api',
+    )
 
-    assert expected == result
+    expected_response_1 = MITMResponse(
+        body='{"value": "response1"}',
+        headers=MITMHeaders({
+            'content-type': ['application/json; charset=UTF-8']
+        }),
+        status_code=200,
+    )
 
+    expected_request_2 = MITMRequest(
+        body='{"value": "response2"}',
+        headers=MITMHeaders({
+            'Accept': ['application/json'],
+            'Accept-Encoding': ['gzip, deflate'],
+            'Connection': ['keep-alive'],
+            'User-Agent': ['python-requests/2.18.4']
+        }),
+        method='POST',
+        url='https://host_a.local/api',
+    )
 
-@mark.parametrize(
-    'request_, matches',
-    [
-        (
-            MITMRequest(
-                body='body content',
-                headers=MITMHeaders({
-                    'Accept': ['text/plain'],
-                    'Connection': ['keep-alive'],
-                    'User-Agent': ['python-requests/2.18.4']
-                }),
-                method='GET',
-                url='https://domain.local/path;param?query=value',
-            ),
-            True,
-        ),
-        (
-            MITMRequest(
-                body='body content',
-                headers=MITMHeaders({
-                    'Accept': ['text/plain'],
-                    'Connection': ['keep-alive'],
-                    'User-Agent': ['curl/7.5.11']
-                }),
-                method='GET',
-                url='https://domain.local/path;param?query=value',
-            ),
-            True,
-        ),
-        (
-            MITMRequest(
-                body='body content',
-                headers=MITMHeaders({
-                    'Accept': ['text/plain'],
-                    'Connection': ['keep-alive'],
-                    'User-Agent': ['python-requests/2.18.4']
-                }),
-                method='GET',
-                url='HTTPS://domain.local/path;param?query=value',
-            ),
-            True,
-        ),
-        (
-            MITMRequest(
-                body='body content',
-                headers=MITMHeaders({
-                    'Accept': ['text/plain'],
-                    'Connection': ['keep-alive'],
-                    'User-Agent': ['python-requests/2.18.4']
-                }),
-                method='POST',
-                url='https://domain.local/path;param?query=value',
-            ),
-            False,
-        ),
-        (
-            MITMRequest(
-                body='body content',
-                headers=MITMHeaders({
-                    'Accept': ['text/plain'],
-                    'Connection': ['keep-alive'],
-                    'User-Agent': ['python-requests/2.18.4']
-                }),
-                method='GET',
-                url='https://otherdomain.local/path;param?query=value',
-            ),
-            False,
-        ),
-        (
-            MITMRequest(
-                body='different body content',
-                headers=MITMHeaders({
-                    'Accept': ['text/plain'],
-                    'Connection': ['keep-alive'],
-                    'User-Agent': ['python-requests/2.18.4']
-                }),
-                method='GET',
-                url='https://domain.local/path;param?query=value',
-            ),
-            False,
-        ),
-    ],
-    ids=[
-        'exact matches',
-        'different headers, still matches',
-        'uppercase schema, still matches',
-        'different method, don\'t match',
-        'different domain, don\'t match',
-        'different body, don\'t match',
-    ]
-)
-def test_match_request(
-    service: BaseService,
-    request_: MITMRequest,
-    sample_request: MITMRequest,
-    matches: bool,
-    scenarios_dir
-):
-    assert service.match_request(request_, sample_request) == matches
+    expected_response_2 = MITMResponse(
+        headers=MITMHeaders({
+            'content-type': ['application/json; charset=UTF-8']
+        }),
+        status_code=201,
+    )
+
+    interactions = service.get_interactions_for_active_scenario()
+
+    assert len(interactions) == 2
+    assert interactions[0].request == expected_request_1
+    assert interactions[0].response == expected_response_1
+    assert interactions[1].request == expected_request_2
+    assert interactions[1].response == expected_response_2
 
 
 @mark.parametrize(
@@ -266,7 +167,6 @@ def test_match_request(
                 url='https://host_a.local/api',
             ),
             MITMResponse(
-                body=None,
                 headers=MITMHeaders({
                     'content-type': ['application/json; charset=UTF-8'],
                 }),

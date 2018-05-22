@@ -60,7 +60,7 @@ TEST_DICT_REQUEST = {
         'User-Agent': ['python-requests/2.18.4'],
     },
     'method': 'GET',
-    'uri': 'http://127.0.0.1/test',
+    'url': 'http://127.0.0.1/test',
 }
 
 

@@ -117,6 +117,7 @@ def test_base_service_process_request_scenario2_and_raise(dispatcher, request):
 
     request_service_1 = MITMRequest(
         method='GET',
+        body='correct body content',
         url='https://host_a.local/api',
         headers=MITMHeaders({
             'Host': ['host_a.local'],
