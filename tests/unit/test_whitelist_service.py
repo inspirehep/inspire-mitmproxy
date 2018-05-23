@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of INSPIRE-MITMROXY.
+# This file is part of INSPIRE-MITMPROXY.
 # Copyright (C) 2018 CERN.
 #
 # INSPIRE is free software: you can redistribute it and/or modify
@@ -20,23 +20,30 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-"""Service which allows all requests outside"""
+"""Test Whitelist Service"""
+
 import os
 
-from ..errors import DoNotIntercept
-from ..http import MITMRequest
-from ..services import BaseService
+from mock import patch
+
+from inspire_mitmproxy.services import WhitelistService
 
 
-class WhitelistService(BaseService):
-    DEFAULT_HOSTS: str = 'test-indexer test-scrapyd test-web-e2e.local'
+def test_load_services_from_os():
+    expected_whitelist = ['my-indexer', 'my-worker']
+    custom_environ = {'MITM_PROXY_WHITELIST': 'my-indexer my-worker'}
 
-    def __init__(self, *args, **kwargs):
-        self.SERVICE_HOSTS = os.environ.get(
-            'MITM_PROXY_WHITELIST',
-            self.DEFAULT_HOSTS
-        ).split()
-        super().__init__(*args, **kwargs)
+    with patch.dict(os.environ, custom_environ):
+        service = WhitelistService()
+        whitelist = service.SERVICE_HOSTS
 
-    def process_request(self, request: MITMRequest):
-        raise DoNotIntercept(self.name, request)
+    assert whitelist == expected_whitelist
+
+
+def test_load_default_hosts():
+    expected_whitelist = ['test-indexer', 'test-scrapyd', 'test-web-e2e.local']
+
+    service = WhitelistService()
+    whitelist = service.SERVICE_HOSTS
+
+    assert whitelist == expected_whitelist
