@@ -21,6 +21,6 @@ callbacks:
   request:
     body: '2'
     method: GET
-    url: http://callback.local
+    url: http://${TEST_ENVAR_INTERPOLATION}.local
     headers:
-      Host: [callback.local]
+      Host: ['${TEST_ENVAR_INTERPOLATION}.local']

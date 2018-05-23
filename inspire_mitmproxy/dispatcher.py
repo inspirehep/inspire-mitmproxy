@@ -29,7 +29,7 @@ from mitmproxy.http import HTTPFlow, HTTPResponse
 
 from .errors import DoNotIntercept, NoServicesForRequest
 from .http import MITMRequest, MITMResponse
-from .services import ArxivService, BaseService, ManagementService, WhitelistService
+from .services import ArxivService, BaseService, LegacyService, ManagementService, WhitelistService
 
 
 logger = getLogger(__name__)
@@ -38,6 +38,7 @@ logger = getLogger(__name__)
 class Dispatcher:
     SERVICE_LIST: List[Type[BaseService]] = [
         ArxivService,
+        LegacyService,
         WhitelistService,
     ]
 
