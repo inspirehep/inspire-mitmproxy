@@ -138,7 +138,7 @@ def test_management_service_get_config(dispatcher):
     )
 
     expected = {
-        'active_scenario': None,
+        'active_scenario': 'default',
     }
 
     assert result.status_code == 200

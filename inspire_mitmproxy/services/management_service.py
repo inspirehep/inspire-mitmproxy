@@ -43,8 +43,9 @@ class ManagementService(BaseService):
     def __init__(self, services: List[BaseService]) -> None:
         self.services = services
         self.config = {
-            'active_scenario': None,
+            'active_scenario': 'default',
         }
+        self.config_propagate()
 
     def process_request(self, request: MITMRequest) -> MITMResponse:
         parsed_url = urlparse(request.url)
