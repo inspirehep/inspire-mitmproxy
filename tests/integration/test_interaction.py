@@ -31,9 +31,10 @@ from inspire_mitmproxy.interaction import Interaction
 
 @fixture(scope='module')
 def interaction_callback(request):
-    return Interaction.from_file(
-        Path(request.fspath.join('../fixtures/test_interaction_callback.yaml'))
-    )
+    with patch.dict('os.environ', {'TEST_ENVAR_INTERPOLATION': 'interpolated'}):
+        yield Interaction.from_file(
+            Path(request.fspath.join('../fixtures/test_interaction_callback.yaml'))
+        )
 
 
 def test_interaction_execute_callbacks(interaction_callback: Interaction):
@@ -54,9 +55,9 @@ def test_interaction_execute_callbacks(interaction_callback: Interaction):
 
         second_expected = call(
             method='GET',
-            url='http://callback.local',
+            url='http://interpolated.local',
             data=b'2',
-            headers={'Host': 'callback.local'},
+            headers={'Host': 'interpolated.local'},
             timeout=10,
         )
 

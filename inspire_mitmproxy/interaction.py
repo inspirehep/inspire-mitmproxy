@@ -22,6 +22,7 @@
 
 """Load/dump interaction files."""
 
+from os.path import expandvars
 from pathlib import Path
 from re import compile
 from threading import Timer
@@ -105,9 +106,12 @@ class Interaction:
         def execute_request(_request: MITMRequest):
             requests.request(
                 method=request.method,
-                url=request.url,
+                url=expandvars(request.url),
                 data=request.body,
-                headers={key: request.headers[key] for key in request.headers.keys()},
+                headers={
+                    key: expandvars(request.headers[key])
+                    for key in request.headers.keys()
+                },
                 timeout=10,
             )
 
