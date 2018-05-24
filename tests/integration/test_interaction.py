@@ -43,8 +43,6 @@ def test_interaction_execute_callbacks(interaction_callback: Interaction):
 
         sleep(1)
 
-        first_callback, second_callback = request.mock_calls
-
         first_expected = call(
             method='GET',
             url='http://callback.local',
@@ -61,5 +59,5 @@ def test_interaction_execute_callbacks(interaction_callback: Interaction):
             timeout=10,
         )
 
-        assert first_callback == first_expected
-        assert second_callback == second_expected
+        assert request.mock_calls.count(first_expected) == 1
+        assert request.mock_calls.count(second_expected) == 1

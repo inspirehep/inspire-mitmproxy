@@ -28,6 +28,7 @@ from socket import getservbyname
 from typing import Any, Dict, KeysView, List, Optional, Union
 from urllib.parse import urlparse
 
+import requests
 from mitmproxy.http import HTTPRequest, HTTPResponse
 from mitmproxy.net.http.headers import Headers
 from mitmproxy.net.http.status_codes import RESPONSES
@@ -41,6 +42,37 @@ def encoding_by_header(headers: 'MITMHeaders') -> str:
         return params['charset']
     except KeyError:
         return 'utf-8'
+
+
+def response_to_string(res: requests.Response) -> str:
+    """
+    :param res: :class:`requests.Response` object
+    Parse the given request and generate an informative string from it
+    """
+    if 'Authorization' in res.request.headers:
+        res.request.headers['Authorization'] = "*****"
+    return """
+####################################
+url = %s
+headers = %s
+-------- data sent -----------------
+%s
+------------------------------------
+@@@@@ response @@@@@@@@@@@@@@@@
+headers = %s
+code = %d
+reason = %s
+--------- data received ------------
+%s
+------------------------------------
+####################################
+""" % (res.url,
+        str(res.request.headers),
+        res.request.body,
+        res.headers,
+        res.status_code,
+        res.reason,
+        res.text)
 
 
 class MITMHeaders:

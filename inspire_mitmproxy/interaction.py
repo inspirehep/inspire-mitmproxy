@@ -22,8 +22,10 @@
 
 """Load/dump interaction files."""
 
+from logging import getLogger
 from os.path import expandvars
 from pathlib import Path
+from pprint import pformat
 from re import compile
 from threading import Timer
 from typing import Dict, List, Optional, Pattern, Union
@@ -31,7 +33,10 @@ from typing import Dict, List, Optional, Pattern, Union
 import requests
 from yaml import load as yaml_load
 
-from .http import MITMRequest, MITMResponse
+from .http import MITMRequest, MITMResponse, response_to_string
+
+
+logger = getLogger(__name__)
 
 
 class Interaction:
@@ -104,7 +109,7 @@ class Interaction:
     @staticmethod
     def execute_callback(request: MITMRequest, delay: Union[int, float]):
         def execute_request(_request: MITMRequest):
-            requests.request(
+            request_params = dict(
                 method=request.method,
                 url=expandvars(request.url),
                 data=request.body,
@@ -114,6 +119,11 @@ class Interaction:
                 },
                 timeout=10,
             )
+            logger.warning("Executing callback:\n%s", pformat(request_params))
+
+            response = requests.request(**request_params)
+            if not response.ok:
+                logger.error("Error executing callback:\n%s", response_to_string(response))
 
         timer = Timer(delay, execute_request, args=[request])
         timer.start()
