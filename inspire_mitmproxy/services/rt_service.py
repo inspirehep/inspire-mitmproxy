@@ -20,11 +20,10 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-"""INSPIRE-MITMProxy Fake Services."""
+"""Fake Service for RT Ticketing System."""
 
-from .arxiv_service import ArxivService  # noqa: F401
-from .base_service import BaseService  # noqa: F401
-from .legacy_service import LegacyService  # noqa: F401
-from .management_service import ManagementService  # noqa: F401
-from .rt_service import RTService  # noqa: F401
-from .whitelist_service import WhitelistService  # noqa: F401
+from .base_service import BaseService
+
+
+class RTService(BaseService):
+    SERVICE_HOSTS = ['inspirevm13.cern.ch', 'rt.inspirehep.net']
