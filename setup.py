@@ -50,7 +50,11 @@ tests_require = [
     'pytest-cov~=2.0,>=2.5.1',
 ]
 
-docs_require: List[str] = []
+docs_require: List[str] = [
+    'Sphinx',
+    'sphinx-automodapi',
+    'sphinx_rtd_theme',
+]
 
 extras_require = {
     'docs': docs_require,
