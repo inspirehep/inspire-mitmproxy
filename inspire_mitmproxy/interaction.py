@@ -20,7 +20,22 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-"""Load/dump interaction files."""
+"""Interaction is a recording of a request-response pair that is to be replayed during the test.
+
+Scenarios are what interactions are organised into. For inspire-next they reside at::
+
+    tests/e2e/scenarios
+
+The directory structure is as follows::
+
+    scenarios/<scenario_name>/<service_name>/<interaction>.yaml
+
+Scenario name can be anything,
+but by convention it is the name of the E2E test without the `test_` prefix. Service name has to
+match one of the services defined in :attr:`inspire_mitmproxy.services`. Name of the interaction
+can be anything, and is only for informative purposes. When recorded automatically, interactions
+are named in sequence of `interaction_0.yaml`, `interaction_1.yaml`, and so on.
+"""
 
 from logging import getLogger
 from os.path import expandvars
@@ -87,6 +102,7 @@ class Interaction:
 
     @property
     def exact_match_fields(self) -> List[str]:
+        """Fields specified match exactly."""
         if not self.match:
             return self.DEFAULT_EXACT_MATCH_FIELDS
 
@@ -97,6 +113,7 @@ class Interaction:
 
     @property
     def regex_match_fields(self) -> Dict[str, Pattern[str]]:
+        """Fields specified (as key in the dictionary) match on the regex defined in value."""
         if not self.match:
             return self.DEFAULT_REGEX_MATCH_FIELDS
 
@@ -121,6 +138,14 @@ class Interaction:
         return True
 
     def matches_request(self, request: MITMRequest) -> bool:
+        """Check if interaction matches the request.
+
+        By default the request is matching the prerecoded request if their urls, methods and bodies
+        are equal (see :attr:`~inspire_mitmproxy.interaction.Interaction.DEFAULT_EXACT_MATCH_FIELDS`
+        and :attr:`~inspire_mitmproxy.interaction.Interaction.DEFAULT_REGEX_MATCH_FIELDS`). You
+        can specify custom matching rules per interaction by using the ``match`` field in the
+        interaction YAML file.
+        """
         return self._matches_by_exact_rules(request) and self._matches_by_regex_rules(request)
 
     @staticmethod
@@ -186,7 +211,39 @@ class Interaction:
         return Interaction(name=new_name, request=request, response=response)
 
     def save_in_dir(self, directory: Path):
-        """Save the interaction to a file."""
+        """Save the interaction to a file.
+
+        Structure of interactions:
+
+        .. code-block:: yaml
+
+            request:
+              body: 'Body of the request'           # string (or bytes)
+              headers:
+                Content-Type: ['text/plain']        # array of strings (case of repeated headers)
+                Host: ['samplehost.local']
+              method: 'PUT'                         # string (one of allowed HTTP method names)
+              url: 'http://samplehost.local/path'   # string
+            response:
+              body: 'Body of the response'          # string (or bytes)
+              headers:
+                Content-Type: ['text/plain']        # array of strings (ditto)
+              status:
+                code: 200                           # integer
+                message: OK                         # string
+            match:
+              exact:
+              - method                              # array of one of the keys in request
+              - uri
+              regex:
+                method: 'PUT|POST'                  # dict with keys of the keys in request
+            callbacks:
+            - delay: 10                             # integer (seconds)
+              request: {}                           # follows request above (as callback is executed
+                                                    # using python-requests, which does not support
+                                                    # multiple header values, only first value of
+                                                    # each header will be used)
+        """
         output_path = directory / f'{self.name}.yaml'
         output_path.write_text(yaml_dump(self.to_dict()))
 
