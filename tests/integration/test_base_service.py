@@ -22,6 +22,7 @@
 
 """Tests for the WhitelistService"""
 
+from json import loads as json_loads
 from os import environ
 from time import sleep
 
@@ -29,7 +30,7 @@ from mock import patch
 from pytest import fixture, raises
 
 from inspire_mitmproxy.dispatcher import Dispatcher
-from inspire_mitmproxy.errors import ScenarioNotFound
+from inspire_mitmproxy.errors import ScenarioNotFound, ServiceNotFound
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest
 from inspire_mitmproxy.services import BaseService
 
@@ -147,3 +148,100 @@ def test_base_service_process_request_scenario2_and_raise(dispatcher, request):
 
     with raises(ScenarioNotFound):
         dispatcher.process_request(request_service_2)
+
+
+def test_get_service_interactions(dispatcher: Dispatcher):
+    request_set_config = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "test_scenario1"}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_service_a = MITMRequest(
+        method='GET',
+        url='https://host_a.local/api',
+        headers=MITMHeaders({
+            'Host': ['host_a.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_service_b = MITMRequest(
+        method='GET',
+        url='https://host_b.local/api',
+        headers=MITMHeaders({
+            'Host': ['host_b.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_service_a_interactions = MITMRequest(
+        method='GET',
+        url='http://mitm-manager.local/service/TestServiceA/interactions',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_service_b_interactions = MITMRequest(
+        method='GET',
+        url='http://mitm-manager.local/service/TestServiceB/interactions',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    response_set_config = dispatcher.process_request(request_set_config)
+    assert response_set_config.status_code == 201
+
+    response_service_a_1 = dispatcher.process_request(request_service_a)
+    assert response_service_a_1.status_code == 200
+
+    response_service_a_2 = dispatcher.process_request(request_service_a)
+    assert response_service_a_2.status_code == 200
+
+    response_service_b = dispatcher.process_request(request_service_b)
+    assert response_service_b.status_code == 200
+
+    response_service_a_interactions = dispatcher.process_request(request_service_a_interactions)
+    response_service_b_interactions = dispatcher.process_request(request_service_b_interactions)
+
+    assert json_loads(response_service_a_interactions.body) == {
+        'interaction_0': {'num_calls': 2}
+    }
+    assert json_loads(response_service_b_interactions.body) == {
+        'interaction_0': {'num_calls': 1}
+    }
+
+
+def test_get_service_interactions_raises(dispatcher: Dispatcher):
+    request_set_config = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "test_scenario1"}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_inexistent_service_interactions = MITMRequest(
+        method='GET',
+        url='http://mitm-manager.local/service/InexistentService/interactions',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    response_set_config = dispatcher.process_request(request_set_config)
+    assert response_set_config.status_code == 201
+
+    with raises(ServiceNotFound):
+        dispatcher.process_request(request_inexistent_service_interactions)

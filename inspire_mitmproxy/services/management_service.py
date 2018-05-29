@@ -27,18 +27,20 @@ from json import dumps as json_dumps
 from json import loads as json_loads
 from os import environ
 from pathlib import Path
-from typing import Dict, List, Optional, Union, cast
+from re import compile
+from typing import Dict, List, Match, Optional, Union, cast
 from urllib.parse import urlparse
 
 from autosemver.packaging import get_current_version
 
-from ..errors import InvalidRequest, RequestNotHandledInService
+from ..errors import InvalidRequest, RequestNotHandledInService, ServiceNotFound
 from ..http import MITMHeaders, MITMRequest, MITMResponse
 from ..services import BaseService
 
 
 class ManagementService(BaseService):
     SERVICE_HOSTS = ['mitm-manager.local']
+    INTERACTIONS_ENDPOINT = compile(r'/service/(\w+)/interactions')
 
     def __init__(self, services: List[BaseService]) -> None:
         self.services = services
@@ -54,6 +56,10 @@ class ManagementService(BaseService):
 
         if path == '/services' and method == 'GET':
             return self.build_response(200, self.get_services())
+        elif self.INTERACTIONS_ENDPOINT.match(path) and method == 'GET':
+            match = cast(Match[str], self.INTERACTIONS_ENDPOINT.match(path))
+            service_name = match.group(1)
+            return self.build_response(200, self.get_service_interactions(service_name))
         elif path == '/scenarios' and method == 'GET':
             return self.build_response(200, self.get_scenarios())
         elif path == '/config' and method == 'GET':
@@ -106,13 +112,13 @@ class ManagementService(BaseService):
         try:
             self.config = json_loads(request.body)
             self.config_propagate()
-        except (JSONDecodeError):
+        except JSONDecodeError:
             raise InvalidRequest(self.name, request)
 
     def build_response(self, code: int, json_message: Optional[Union[dict, list]]) -> MITMResponse:
-        if json_message:
+        try:
             body = json_dumps(json_message, indent=2)
-        else:
+        except JSONDecodeError:
             body = ''
 
         return MITMResponse(
@@ -125,6 +131,13 @@ class ManagementService(BaseService):
                 ]
             }),
         )
+
+    def get_service_interactions(self, service_name) -> dict:
+        for service in self.services:
+            if service.name == service_name:
+                return service.interactions_replayed
+
+        raise ServiceNotFound(service_name)
 
     def config_propagate(self):
         """On change of config, propagate relevant information to services."""

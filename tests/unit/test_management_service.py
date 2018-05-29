@@ -208,3 +208,22 @@ def test_management_service_build_response(management_service):
     )
 
     assert expected == result
+
+
+def test_management_service_build_response_empty_object_body(management_service):
+    with patch(
+        'inspire_mitmproxy.services.management_service.get_current_version',
+        return_value='0.0.1',
+    ):
+        result = management_service.build_response(200, json_message={})
+
+    expected = MITMResponse(
+        body='{}',
+        headers=MITMHeaders({
+            'Content-Type': ['application/json; encoding=UTF-8'],
+            'Server': ['inspire-mitmproxy/0.0.1'],
+        }),
+        status_code=200,
+    )
+
+    assert expected == result

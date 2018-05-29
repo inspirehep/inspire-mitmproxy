@@ -36,7 +36,10 @@ from inspire_mitmproxy.services import BaseService
 def service():
     class TestService(BaseService):
         SERVICE_HOSTS = ['host_a.local', 'host_b.local']
-        active_scenario = 'test_scenario1'
+
+        def __init__(self):
+            super().__init__()
+            self.active_scenario = 'test_scenario1'
 
     return TestService()
 
@@ -175,8 +178,8 @@ def test_base_service_get_interactions_for_active_scenario(service: BaseService,
         ),
     ],
     ids=[
-        'match 0.yaml',
-        'match 1.yaml',
+        'match interaction_0.yaml',
+        'match interaction_1.yaml',
     ]
 )
 def test_process_request(
@@ -200,3 +203,23 @@ def test_process_request_fails_on_unknown_request(service: BaseService, scenario
 
     with raises(NoMatchingRecording):
         service.process_request(request)
+
+
+def test_increment_interaction_count_first(service: BaseService):
+    expected = 1
+
+    service.increment_interaction_count('test_interaction')
+    result = service.interactions_replayed['test_interaction']['num_calls']
+
+    assert expected == result
+
+
+def test_increment_interaction_count_repeated(service: BaseService):
+    service.interactions_replayed['test_interaction'] = {'num_calls': 5}
+
+    expected = 6
+
+    service.increment_interaction_count('test_interaction')
+    result = service.interactions_replayed['test_interaction']['num_calls']
+
+    assert expected == result
