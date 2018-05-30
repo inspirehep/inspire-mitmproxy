@@ -24,7 +24,7 @@
 
 from os import environ
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import splitport  # type: ignore
 from urllib.parse import urlparse
 
@@ -36,7 +36,10 @@ from ..interaction import Interaction
 class BaseService:
     """Mocked service base."""
     SERVICE_HOSTS: List[str] = []
-    active_scenario: Optional[str] = None
+
+    def __init__(self):
+        self.active_scenario: Optional[str] = None
+        self.interactions_replayed: Dict[str, Dict[str, Any]] = {}
 
     @property
     def name(self):
@@ -57,9 +60,16 @@ class BaseService:
             if interaction.matches_request(request):
                 response = interaction.response
                 interaction.execute_callbacks()
+                self.increment_interaction_count(interaction.name)
                 return response
 
         raise NoMatchingRecording(self.name, request)
+
+    def increment_interaction_count(self, interaction_name: str):
+        try:
+            self.interactions_replayed[interaction_name]['num_calls'] += 1
+        except KeyError:
+            self.interactions_replayed.setdefault(interaction_name, {'num_calls': 1})
 
     def get_interactions_for_active_scenario(self) -> List[Interaction]:
         """Get a list of scenarios"""

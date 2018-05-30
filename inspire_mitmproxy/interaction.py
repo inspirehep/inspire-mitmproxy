@@ -46,11 +46,13 @@ class Interaction:
 
     def __init__(
         self,
+        name,
         request: MITMRequest,
         response: MITMResponse,
         match: Optional[dict],
         callbacks: Optional[List[dict]],
     ) -> None:
+        self.name = name
         self.request = request
         self.response = response
         self.match = match or {}
@@ -62,6 +64,7 @@ class Interaction:
         interaction_dict = yaml_load(interaction_string)
 
         return cls(
+            name=interaction_file.stem,  # type: ignore
             request=MITMRequest.from_dict(interaction_dict['request']),
             response=MITMResponse.from_dict(interaction_dict['response']),
             match=interaction_dict.get('match'),

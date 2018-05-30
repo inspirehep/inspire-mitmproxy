@@ -36,6 +36,13 @@ class NoServicesForRequest(MITMProxyHTTPError):
         super().__init__(message)
 
 
+class ServiceNotFound(MITMProxyHTTPError):
+    def __init__(self, service_name: str) -> None:
+        self.http_status_code = 404
+        message = f"Service {service_name} doesn't exist"
+        super().__init__(message)
+
+
 class RequestNotHandledInService(MITMProxyHTTPError):
     def __init__(self, service_name: str, request: MITMRequest) -> None:
         self.http_status_code = 501
