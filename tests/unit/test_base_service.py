@@ -209,17 +209,48 @@ def test_increment_interaction_count_first(service: BaseService):
     expected = 1
 
     service.increment_interaction_count('test_interaction')
-    result = service.interactions_replayed['test_interaction']['num_calls']
+    result = service.interactions_replayed[service.active_scenario]['test_interaction']['num_calls']
 
     assert expected == result
 
 
 def test_increment_interaction_count_repeated(service: BaseService):
-    service.interactions_replayed['test_interaction'] = {'num_calls': 5}
+    service.interactions_replayed[service.active_scenario] = {
+        'test_interaction': {'num_calls': 5},
+    }
 
     expected = 6
 
     service.increment_interaction_count('test_interaction')
-    result = service.interactions_replayed['test_interaction']['num_calls']
+    result = service.interactions_replayed[service.active_scenario]['test_interaction']['num_calls']
 
     assert expected == result
+
+
+def test_increment_interaction_count_repeated_on_multiple_scenarios(service: BaseService):
+    service.interactions_replayed['scenario1'] = {
+        'test_interaction': {'num_calls': 1},
+    }
+    service.interactions_replayed['scenario2'] = {
+        'test_interaction': {'num_calls': 10},
+    }
+
+    expected_scenario1 = 2
+    expected_scenario2 = 10
+    service.active_scenario = 'scenario1'
+    service.increment_interaction_count('test_interaction')
+    result_scenario1 = service.interactions_replayed['scenario1']['test_interaction']['num_calls']
+    result_scenario2 = service.interactions_replayed['scenario2']['test_interaction']['num_calls']
+
+    assert expected_scenario1 == result_scenario1
+    assert expected_scenario2 == result_scenario2
+
+    expected_scenario1 = 2
+    expected_scenario2 = 11
+    service.active_scenario = 'scenario2'
+    service.increment_interaction_count('test_interaction')
+    result_scenario1 = service.interactions_replayed['scenario1']['test_interaction']['num_calls']
+    result_scenario2 = service.interactions_replayed['scenario2']['test_interaction']['num_calls']
+
+    assert expected_scenario1 == result_scenario1
+    assert expected_scenario2 == result_scenario2

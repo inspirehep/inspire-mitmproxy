@@ -49,6 +49,10 @@ class ManagementService(BaseService):
         }
         self.config_propagate()
 
+    @property
+    def active_scenario(self):
+        return self.config.get('active_scenario', 'default')
+
     def process_request(self, request: MITMRequest) -> MITMResponse:
         parsed_url = urlparse(request.url)
         path = parsed_url.path
@@ -135,7 +139,7 @@ class ManagementService(BaseService):
     def get_service_interactions(self, service_name) -> dict:
         for service in self.services:
             if service.name == service_name:
-                return service.interactions_replayed
+                return service.interactions_replayed.get(self.active_scenario, {})
 
         raise ServiceNotFound(service_name)
 
