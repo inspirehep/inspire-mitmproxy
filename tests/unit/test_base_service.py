@@ -22,12 +22,14 @@
 
 """Test BaseService"""
 
-from os import environ
+from os import chdir, environ, getcwd
+from pathlib import Path
+from typing import Optional
 
 from mock import patch
 from pytest import fixture, mark, raises
 
-from inspire_mitmproxy.errors import NoMatchingRecording
+from inspire_mitmproxy.errors import NoMatchingRecording, ScenarioNotInService
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
 from inspire_mitmproxy.services import BaseService
 
@@ -39,7 +41,7 @@ def service():
 
         def __init__(self):
             super().__init__()
-            self.active_scenario = 'test_scenario1'
+            self.active_scenario = 'test_scenario'
 
     return TestService()
 
@@ -50,6 +52,14 @@ def scenarios_dir(request):
         'SCENARIOS_PATH': str(request.fspath.join('../fixtures/scenarios'))
     }):
         yield
+
+
+@fixture(scope='function')
+def in_tmpdir(tmpdir):
+    initial_cwd = getcwd()
+    chdir(tmpdir)
+    yield tmpdir
+    chdir(initial_cwd)
 
 
 @fixture
@@ -254,3 +264,113 @@ def test_increment_interaction_count_repeated_on_multiple_scenarios(service: Bas
 
     assert expected_scenario1 == result_scenario1
     assert expected_scenario2 == result_scenario2
+
+
+@mark.parametrize(
+    'scenario_dir_exists, scenario_dir_envar, expected_generated_path',
+    [
+        (True, '{tmpdir}/scenarios/', '{tmpdir}/scenarios/test_scenario/TestService/'),
+        (False, '{tmpdir}/scenarios/', '{tmpdir}/scenarios/test_scenario/TestService/'),
+    ]
+)
+def test_get_path_for_active_scenario_dir_from_envar_and_create(
+    tmpdir,
+    service: BaseService,
+    scenario_dir_exists: bool,
+    scenario_dir_envar: Optional[str],
+    expected_generated_path: str,
+):
+    scenarios_dir = tmpdir.join('scenarios').mkdir()
+
+    if scenario_dir_exists:
+        scenarios_dir.join('test_scenario').mkdir()
+        scenarios_dir.join('test_scenario').join('TestService').mkdir()
+        assert scenarios_dir.join('test_scenario').join('TestService').exists()
+    else:
+        assert not scenarios_dir.join('test_scenario').join('TestService').exists()
+
+    with patch.dict(environ, {'SCENARIOS_PATH': scenario_dir_envar.format(tmpdir=tmpdir)}):
+        result_generated_path = service.get_path_for_active_scenario_dir(create=True)
+        expected_generated_path = Path(expected_generated_path.format(tmpdir=tmpdir))
+
+        assert result_generated_path == expected_generated_path
+
+        assert scenarios_dir.join('test_scenario').join('TestService').exists()
+
+
+def test_get_path_for_active_scenario_dir_from_envar_do_not_create(
+    tmpdir,
+    service: BaseService,
+):
+    scenarios_dir = tmpdir.join('scenarios').mkdir()
+
+    assert not scenarios_dir.join('test_scenario').join('TestService').exists()
+
+    with patch.dict(environ, {'SCENARIOS_PATH': '{tmpdir}/scenarios/'.format(tmpdir=tmpdir)}):
+        result_generated_path = service.get_path_for_active_scenario_dir(create=False)
+        expected_generated_path = Path(
+            '{tmpdir}/scenarios/test_scenario/TestService/'.format(tmpdir=tmpdir)
+        )
+
+        assert result_generated_path == expected_generated_path
+
+        assert not scenarios_dir.join('test_scenario').join('TestService').exists()
+
+
+def test_get_path_for_active_scenario_dir_from_default_do_not_create_already_exists(
+    in_tmpdir,
+    service: BaseService,
+):
+    scenarios_dir = in_tmpdir.join('scenarios').mkdir()
+
+    assert not scenarios_dir.join('test_scenario').join('TestService').exists()
+
+    result_generated_path = service.get_path_for_active_scenario_dir(create=False)
+    expected_generated_path = Path(
+        './scenarios/test_scenario/TestService/'.format(tmpdir=in_tmpdir)
+    )
+
+    assert result_generated_path == expected_generated_path
+
+    assert not scenarios_dir.join('test_scenario').join('TestService').exists()
+
+
+def test_get_interactions_in_scenario(service: BaseService, request):
+    interaction_dir = request.fspath.join('../fixtures/scenarios/test_scenario/TestService/')
+
+    expected = [
+        f'Interaction.from_file({interaction_dir.join("interaction_0.yaml")})',
+        f'Interaction.from_file({interaction_dir.join("interaction_1.yaml")})',
+    ]
+
+    with patch(
+        'inspire_mitmproxy.interaction.Interaction.from_file',
+        side_effect=lambda interaction_file: f'Interaction.from_file({interaction_file})',
+    ):
+        result = service.get_interactions_in_scenario(Path(interaction_dir))
+
+        assert expected == result
+
+
+def test_get_interactions_for_active_scenario(service: BaseService, scenarios_dir, request):
+    interaction_dir = request.fspath.join('../fixtures/scenarios/test_scenario/TestService/')
+
+    expected = [
+        f'Interaction.from_file({interaction_dir.join("interaction_0.yaml")})',
+        f'Interaction.from_file({interaction_dir.join("interaction_1.yaml")})',
+    ]
+
+    with patch(
+        'inspire_mitmproxy.interaction.Interaction.from_file',
+        side_effect=lambda interaction_file: f'Interaction.from_file({interaction_file})',
+    ):
+        result = service.get_interactions_for_active_scenario()
+
+        assert expected == result
+
+
+def test_get_interactions_for_active_scenario_raises(service: BaseService, scenarios_dir):
+    service.active_scenario = 'this_scenario_does_not_exist'
+
+    with raises(ScenarioNotInService):
+        service.get_interactions_for_active_scenario()

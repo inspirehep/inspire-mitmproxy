@@ -127,7 +127,7 @@ class MITMHeaders:
         return self.headers == other.headers
 
     def __repr__(self):
-        return f'MITMHeaders(headers={repr(self.headers)})'
+        return f'MITMHeaders(headers={self.headers!r})'
 
 
 class MITMRequest:
@@ -210,8 +210,8 @@ class MITMRequest:
         )
 
     def __repr__(self):
-        return f'MITMRequest("{self.url}", "{self.method}", ' \
-            f'headers={repr(self.headers)}, body="{self.body}")'
+        return f'MITMRequest({self.url!r}, {self.method!r}, ' \
+            f'headers={self.headers!r}, body={self.body!r})'
 
     def __getitem__(self, field: str):
         return getattr(self, field)
@@ -289,5 +289,5 @@ class MITMResponse:
         )
 
     def __repr__(self):
-        return f'MITMResponse({self.status_code}, "{self.status_message}", ' \
-            f'headers={repr(self.headers)}, body="{self.body}")'
+        return f'MITMResponse({self.status_code!r}, {self.status_message!r}, ' \
+            f'headers={self.headers!r}, body={self.body!r})'

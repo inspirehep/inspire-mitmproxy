@@ -70,15 +70,8 @@ class NoMatchingRecording(MITMProxyHTTPError):
         super().__init__(message)
 
 
-class ScenarioNotFound(MITMProxyHTTPError):
+class ScenarioNotInService(MITMProxyHTTPError):
     def __init__(self, service_name: str, scenario: str) -> None:
         self.http_status_code = 501
         message = f"Scenario {scenario} not found in service {service_name}"
-        super().__init__(message)
-
-
-class ScenarioUndefined(MITMProxyHTTPError):
-    def __init__(self, service_name: str) -> None:
-        self.http_status_code = 501
-        message = f"Scenario not set in service {service_name}"
         super().__init__(message)

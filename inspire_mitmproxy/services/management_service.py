@@ -43,14 +43,16 @@ class ManagementService(BaseService):
     INTERACTIONS_ENDPOINT = compile(r'/service/(\w+)/interactions')
 
     def __init__(self, services: List[BaseService]) -> None:
+        super(ManagementService, self).__init__()
+
         self.services = services
         self.config = {
             'active_scenario': 'default',
         }
-        self.config_propagate()
+        self.is_recording = False
+        self.propagate_option_changes()
 
-    @property
-    def active_scenario(self):
+    def get_active_scenario(self):
         return self.config.get('active_scenario', 'default')
 
     def process_request(self, request: MITMRequest) -> MITMResponse:
@@ -72,6 +74,10 @@ class ManagementService(BaseService):
             return self.build_response(204, self.put_config(request))
         elif path == '/config' and method == 'POST':
             return self.build_response(201, self.post_config(request))
+        elif path == '/record' and method == 'PUT':
+            return self.build_response(204, self.set_recording(request))
+        elif path == '/record' and method == 'POST':
+            return self.build_response(201, self.set_recording(request))
 
         raise RequestNotHandledInService(self.name, request)
 
@@ -108,15 +114,26 @@ class ManagementService(BaseService):
         try:
             config_update = json_loads(request.body)
             self.config.update(config_update)
-            self.config_propagate()
+            self.propagate_option_changes()
         except (JSONDecodeError, ValueError):
             raise InvalidRequest(self.name, request)
 
     def post_config(self, request: MITMRequest):
         try:
             self.config = json_loads(request.body)
-            self.config_propagate()
+            self.propagate_option_changes()
         except JSONDecodeError:
+            raise InvalidRequest(self.name, request)
+
+    def set_recording(self, request: MITMRequest):
+        try:
+            recording_opts = json_loads(request.body)
+            self.is_recording = recording_opts['enable']
+            self.propagate_option_changes()
+            return {
+                'enabled': self.is_recording,
+            }
+        except (JSONDecodeError, KeyError, TypeError):
             raise InvalidRequest(self.name, request)
 
     def build_response(self, code: int, json_message: Optional[Union[dict, list]]) -> MITMResponse:
@@ -139,11 +156,12 @@ class ManagementService(BaseService):
     def get_service_interactions(self, service_name) -> dict:
         for service in self.services:
             if service.name == service_name:
-                return service.interactions_replayed.get(self.active_scenario, {})
+                return service.interactions_replayed.get(self.get_active_scenario(), {})
 
         raise ServiceNotFound(service_name)
 
-    def config_propagate(self):
+    def propagate_option_changes(self):
         """On change of config, propagate relevant information to services."""
         for service in self.services:
-            service.active_scenario = self.config.get('active_scenario')
+            service.active_scenario = self.get_active_scenario()
+            service.is_recording = self.is_recording

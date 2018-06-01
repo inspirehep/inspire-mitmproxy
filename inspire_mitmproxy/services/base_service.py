@@ -28,7 +28,7 @@ from typing import Any, Dict, List
 from urllib.parse import splitport  # type: ignore
 from urllib.parse import urlparse
 
-from ..errors import NoMatchingRecording, ScenarioNotFound, ScenarioUndefined
+from ..errors import DoNotIntercept, NoMatchingRecording, ScenarioNotInService
 from ..http import MITMRequest, MITMResponse
 from ..interaction import Interaction
 
@@ -40,6 +40,7 @@ class BaseService:
     def __init__(self):
         self.active_scenario: str = 'default'
         self.interactions_replayed: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        self.is_recording = False
 
     @property
     def name(self):
@@ -54,16 +55,43 @@ class BaseService:
 
         return host in self.SERVICE_HOSTS
 
-    def process_request(self, request: MITMRequest) -> MITMResponse:
-        """Perform operations and give response."""
+    def _get_first_matching_interaction(self, request):
         for interaction in self.get_interactions_for_active_scenario():
             if interaction.matches_request(request):
-                response = interaction.response
-                interaction.execute_callbacks()
-                self.increment_interaction_count(interaction.name)
-                return response
+                return interaction
 
-        raise NoMatchingRecording(self.name, request)
+    def _raise_do_not_intercept_if_recording(self, request):
+        if self.is_recording:
+            raise DoNotIntercept(self.name, request)
+
+    def process_request(self, request):
+        try:
+            matched_interaction = self._get_first_matching_interaction(request)
+        except ScenarioNotInService:
+            self._raise_do_not_intercept_if_recording(request)
+            raise
+
+        if matched_interaction is None:
+            self._raise_do_not_intercept_if_recording(request)
+            raise NoMatchingRecording(self.name, request)
+
+        response = matched_interaction.response
+        matched_interaction.execute_callbacks()
+        self.increment_interaction_count(matched_interaction.name)
+        return response
+
+    def process_response(self, request: MITMRequest, response: MITMResponse):
+        """Perform operations based on live response."""
+        if not self.is_recording:
+            return
+
+        current_scenario_dir = self.get_path_for_active_scenario_dir(create=True)
+        interaction = Interaction.next_in_dir(
+            directory=current_scenario_dir,
+            request=request,
+            response=response,
+        )
+        interaction.save_in_dir(current_scenario_dir)
 
     def increment_interaction_count(self, interaction_name: str):
         try:
@@ -77,19 +105,27 @@ class BaseService:
                 {'num_calls': 1},
             )
 
-    def get_interactions_for_active_scenario(self) -> List[Interaction]:
-        """Get a list of scenarios"""
-        if not self.active_scenario:
-            raise ScenarioUndefined(self.name)
-
+    def get_path_for_active_scenario_dir(self, create=False) -> Path:
         scenarios_path = Path(environ.get('SCENARIOS_PATH', './scenarios/'))
-        responses_dir = scenarios_path / self.active_scenario / self.name
+        interactions_dir = scenarios_path / self.active_scenario / self.name
 
-        if not responses_dir.exists():
-            raise ScenarioNotFound(self.name, self.active_scenario)
+        if create:
+            interactions_dir.mkdir(parents=True, exist_ok=True)
 
+        return interactions_dir
+
+    def get_interactions_in_scenario(self, scenario_path: Path) -> List[Interaction]:
         return [
             Interaction.from_file(interaction_file=interaction_path)
-            for interaction_path in sorted(responses_dir.iterdir())
+            for interaction_path in sorted(scenario_path.iterdir())
             if interaction_path.is_file() and interaction_path.suffix == '.yaml'
         ]
+
+    def get_interactions_for_active_scenario(self) -> List[Interaction]:
+        """Get a list of scenarios"""
+        scenario_dir = self.get_path_for_active_scenario_dir(create=False)
+
+        if not scenario_dir.exists():
+            raise ScenarioNotInService(self.name, self.active_scenario)
+
+        return self.get_interactions_in_scenario(scenario_dir)

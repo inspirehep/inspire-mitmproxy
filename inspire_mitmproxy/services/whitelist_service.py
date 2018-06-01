@@ -24,7 +24,7 @@
 import os
 
 from ..errors import DoNotIntercept
-from ..http import MITMRequest
+from ..http import MITMRequest, MITMResponse
 from ..services import BaseService
 
 
@@ -40,3 +40,6 @@ class WhitelistService(BaseService):
 
     def process_request(self, request: MITMRequest):
         raise DoNotIntercept(self.name, request)
+
+    def process_response(self, request: MITMRequest, response: MITMResponse):
+        pass
