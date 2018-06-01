@@ -24,7 +24,7 @@
 
 from os import environ
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from urllib.parse import splitport  # type: ignore
 from urllib.parse import urlparse
 
@@ -38,8 +38,8 @@ class BaseService:
     SERVICE_HOSTS: List[str] = []
 
     def __init__(self):
-        self.active_scenario: Optional[str] = None
-        self.interactions_replayed: Dict[str, Dict[str, Any]] = {}
+        self.active_scenario: str = 'default'
+        self.interactions_replayed: Dict[str, Dict[str, Dict[str, Any]]] = {}
 
     @property
     def name(self):
@@ -67,9 +67,15 @@ class BaseService:
 
     def increment_interaction_count(self, interaction_name: str):
         try:
-            self.interactions_replayed[interaction_name]['num_calls'] += 1
+            self.interactions_replayed[self.active_scenario][interaction_name]['num_calls'] += 1
         except KeyError:
-            self.interactions_replayed.setdefault(interaction_name, {'num_calls': 1})
+            self.interactions_replayed.setdefault(
+                self.active_scenario,
+                {},
+            ).setdefault(
+                interaction_name,
+                {'num_calls': 1},
+            )
 
     def get_interactions_for_active_scenario(self) -> List[Interaction]:
         """Get a list of scenarios"""
