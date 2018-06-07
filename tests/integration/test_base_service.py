@@ -22,16 +22,18 @@
 
 """Tests for the WhitelistService"""
 
+from distutils.dir_util import copy_tree
 from json import loads as json_loads
 from os import environ
 from time import sleep
 
 from mock import patch
 from pytest import fixture, raises
+from yaml import load as yaml_load
 
 from inspire_mitmproxy.dispatcher import Dispatcher
-from inspire_mitmproxy.errors import ScenarioNotFound, ServiceNotFound
-from inspire_mitmproxy.http import MITMHeaders, MITMRequest
+from inspire_mitmproxy.errors import DoNotIntercept, ScenarioNotInService, ServiceNotFound
+from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
 from inspire_mitmproxy.services import BaseService
 
 
@@ -67,11 +69,23 @@ def scenarios_dir(request):
         yield
 
 
-def test_base_service_process_request_scenario1(dispatcher, request):
+@fixture(scope='function')
+def temporary_scenarios_dir(request, tmpdir):
+    fixtures_dir = request.fspath.join('../fixtures/scenarios')
+    tmp_scenarios = tmpdir.join('scenarios')
+    copy_tree(str(fixtures_dir), str(tmp_scenarios.strpath))
+
+    with patch.dict(environ, {
+        'SCENARIOS_PATH': str(tmp_scenarios.strpath)
+    }):
+        yield tmp_scenarios
+
+
+def test_base_service_process_request_test_scenario_replays_ok(dispatcher):
     request_set_config = MITMRequest(
         method='POST',
         url='http://mitm-manager.local/config',
-        body='{"active_scenario": "test_scenario1"}',
+        body='{"active_scenario": "test_scenario_replays_ok"}',
         headers=MITMHeaders({
             'Host': ['mitm-manager.local'],
             'Accept': ['application/json'],
@@ -99,18 +113,22 @@ def test_base_service_process_request_scenario1(dispatcher, request):
     response_set_config = dispatcher.process_request(request_set_config)
     assert response_set_config.status_code == 201
 
-    response_service_1 = dispatcher.process_request(request_service_1)
-    assert response_service_1.body == b'test_scenario1/TestServiceA/0'
+    with patch('requests.request') as request:
+        response_service_1 = dispatcher.process_request(request_service_1)
+        assert response_service_1.body == b'test_scenario_replays_ok/TestServiceA/0'
+
+        sleep(1)  # Wait for the callback
+        request.assert_called_once()
 
     response_service_2 = dispatcher.process_request(request_service_2)
-    assert response_service_2.body == b'test_scenario1/TestServiceB/0'
+    assert response_service_2.body == b'test_scenario_replays_ok/TestServiceB/0'
 
 
-def test_base_service_process_request_scenario2_and_raise(dispatcher, request):
+def test_base_service_process_request_scenario_raise_if_no_interaction(dispatcher):
     request_set_config = MITMRequest(
         method='POST',
         url='http://mitm-manager.local/config',
-        body='{"active_scenario": "test_scenario2"}',
+        body='{"active_scenario": "test_scenario_raise_if_no_interaction"}',
         headers=MITMHeaders({
             'Host': ['mitm-manager.local'],
             'Accept': ['application/json'],
@@ -136,17 +154,13 @@ def test_base_service_process_request_scenario2_and_raise(dispatcher, request):
         })
     )
 
-    with patch('requests.request') as request_func:
-        response_set_config = dispatcher.process_request(request_set_config)
-        assert response_set_config.status_code == 201
-
-        sleep(1)
-        request_func.assert_called_once()
+    response_set_config = dispatcher.process_request(request_set_config)
+    assert response_set_config.status_code == 201
 
     response_service_1 = dispatcher.process_request(request_service_1)
-    assert response_service_1.body == b'test_scenario2/TestServiceA/0'
+    assert response_service_1.body == b'test_scenario_raise_if_no_interaction/TestServiceA/0'
 
-    with raises(ScenarioNotFound):
+    with raises(ScenarioNotInService):
         dispatcher.process_request(request_service_2)
 
 
@@ -154,7 +168,7 @@ def test_get_service_interactions(dispatcher: Dispatcher):
     request_set_config = MITMRequest(
         method='POST',
         url='http://mitm-manager.local/config',
-        body='{"active_scenario": "test_scenario1"}',
+        body='{"active_scenario": "test_scenario_replays_ok"}',
         headers=MITMHeaders({
             'Host': ['mitm-manager.local'],
             'Accept': ['application/json'],
@@ -200,11 +214,15 @@ def test_get_service_interactions(dispatcher: Dispatcher):
     response_set_config = dispatcher.process_request(request_set_config)
     assert response_set_config.status_code == 201
 
-    response_service_a_1 = dispatcher.process_request(request_service_a)
-    assert response_service_a_1.status_code == 200
+    with patch('requests.request') as request:
+        response_service_a_1 = dispatcher.process_request(request_service_a)
+        assert response_service_a_1.status_code == 200
 
-    response_service_a_2 = dispatcher.process_request(request_service_a)
-    assert response_service_a_2.status_code == 200
+        response_service_a_2 = dispatcher.process_request(request_service_a)
+        assert response_service_a_2.status_code == 200
+
+        sleep(1)  # Wait for the callback
+        assert request.call_count == 2
 
     response_service_b = dispatcher.process_request(request_service_b)
     assert response_service_b.status_code == 200
@@ -224,7 +242,7 @@ def test_get_service_interactions_raises(dispatcher: Dispatcher):
     request_set_config = MITMRequest(
         method='POST',
         url='http://mitm-manager.local/config',
-        body='{"active_scenario": "test_scenario1"}',
+        body='{"active_scenario": "test_scenario_replays_ok"}',
         headers=MITMHeaders({
             'Host': ['mitm-manager.local'],
             'Accept': ['application/json'],
@@ -245,3 +263,264 @@ def test_get_service_interactions_raises(dispatcher: Dispatcher):
 
     with raises(ServiceNotFound):
         dispatcher.process_request(request_inexistent_service_interactions)
+
+
+def test_base_service_process_response_record_create_interaction_dir_if_does_not_exist(
+    dispatcher: Dispatcher,
+    temporary_scenarios_dir,
+):
+    assert not temporary_scenarios_dir.join('test_scenario_record_creates_dir').exists()
+
+    expected_recording = {
+        'request': {
+            'body': '',
+            'headers': {
+                'Accept': ['text/plain'],
+                'Host': ['host_a.local']
+            },
+            'method': 'GET',
+            'url': 'https://host_a.local/recordme'
+        },
+        'response': {
+            'body': 'Hello, world!',
+            'headers': {},
+            'status': {
+                'code': 200,
+                'message': 'OK'
+            }
+        },
+        'match': {},
+        'callbacks': [],
+    }
+
+    request_set_scenario = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "test_scenario_record_creates_dir"}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_enable_recording = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/record',
+        body='{"enable": true}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_to_be_recorded = MITMRequest(
+        method='GET',
+        url='https://host_a.local/recordme',
+        headers=MITMHeaders({
+            'Host': ['host_a.local'],
+            'Accept': ['text/plain'],
+        })
+    )
+
+    response_to_be_recorded = MITMResponse(
+        status_code=200,
+        body='Hello, world!'
+    )
+
+    response_set_scenario = dispatcher.process_request(request_set_scenario)
+    assert response_set_scenario.status_code == 201
+
+    response_enable_recording = dispatcher.process_request(request_enable_recording)
+    assert response_enable_recording.status_code == 201
+
+    with raises(DoNotIntercept):
+        dispatcher.process_request(request_to_be_recorded)
+
+    dispatcher.process_response(request_to_be_recorded, response_to_be_recorded)
+
+    service_interactions_dir = temporary_scenarios_dir.join('test_scenario_record_creates_dir')
+    assert service_interactions_dir.exists()
+    assert len(service_interactions_dir.listdir()) == 1
+    assert len(service_interactions_dir.join('TestServiceA').listdir()) == 1
+
+    out_file = service_interactions_dir.join('TestServiceA').join('interaction_0.yaml').read()
+    result_recording = yaml_load(out_file)
+    assert expected_recording == result_recording
+
+
+def test_base_service_process_response_record_when_empty_interactions_dir_exists_already(
+    dispatcher: Dispatcher,
+    temporary_scenarios_dir,
+):
+    temporary_scenarios_dir.join('test_scenario_record_dir_exists').mkdir()
+    assert temporary_scenarios_dir.join('test_scenario_record_dir_exists').exists()
+
+    expected_recording = {
+        'request': {
+            'body': '',
+            'headers': {
+                'Accept': ['text/plain'],
+                'Host': ['host_a.local']
+            },
+            'method': 'GET',
+            'url': 'https://host_a.local/recordme'
+        },
+        'response': {
+            'body': 'Hello, world!',
+            'headers': {},
+            'status': {
+                'code': 200,
+                'message': 'OK'
+            }
+        },
+        'match': {},
+        'callbacks': [],
+    }
+
+    request_set_scenario = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "test_scenario_record_dir_exists"}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_enable_recording = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/record',
+        body='{"enable": true}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_to_be_recorded = MITMRequest(
+        method='GET',
+        url='https://host_a.local/recordme',
+        headers=MITMHeaders({
+            'Host': ['host_a.local'],
+            'Accept': ['text/plain'],
+        })
+    )
+
+    response_to_be_recorded = MITMResponse(
+        status_code=200,
+        body='Hello, world!'
+    )
+
+    response_set_scenario = dispatcher.process_request(request_set_scenario)
+    assert response_set_scenario.status_code == 201
+
+    response_enable_recording = dispatcher.process_request(request_enable_recording)
+    assert response_enable_recording.status_code == 201
+
+    with raises(DoNotIntercept):
+        dispatcher.process_request(request_to_be_recorded)
+
+    dispatcher.process_response(request_to_be_recorded, response_to_be_recorded)
+
+    service_interactions_dir = temporary_scenarios_dir.join('test_scenario_record_dir_exists')
+    assert service_interactions_dir.exists()
+    assert len(service_interactions_dir.listdir()) == 1
+    assert len(service_interactions_dir.join('TestServiceA').listdir()) == 1
+
+    out_file = service_interactions_dir.join('TestServiceA').join('interaction_0.yaml').read()
+    result_recording = yaml_load(out_file)
+    assert expected_recording == result_recording
+
+
+def test_base_service_process_response_record_when_dir_exists_and_has_some_interactions_already(
+    dispatcher: Dispatcher,
+    temporary_scenarios_dir,
+):
+    expected_replayed_response = b'test_scenario_record_not_empty/TestServiceA/0'
+    expected_recording = {
+        'request': {
+            'url': 'https://host_a.local/recordme',
+            'method': 'GET',
+            'body': '',
+            'headers': {
+                'Accept': ['text/plain'],
+                'Host': ['host_a.local'],
+            },
+        },
+        'response': {
+            'body': 'Hello, world!',
+            'headers': {},
+            'status': {
+                'code': 200,
+                'message': 'OK',
+            },
+        },
+        'match': {},
+        'callbacks': [],
+    }
+
+    request_set_scenario = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "test_scenario_record_not_empty"}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_enable_recording = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/record',
+        body='{"enable": true}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    request_to_be_replayed = MITMRequest(
+        method='GET',
+        url='https://host_a.local/replayme',
+        headers=MITMHeaders({
+            'Host': ['host_a.local'],
+            'Accept': ['text/plain'],
+        })
+    )
+
+    request_to_be_recorded = MITMRequest(
+        method='GET',
+        url='https://host_a.local/recordme',
+        headers=MITMHeaders({
+            'Host': ['host_a.local'],
+            'Accept': ['text/plain'],
+        })
+    )
+
+    response_to_be_recorded = MITMResponse(
+        status_code=200,
+        body='Hello, world!'
+    )
+
+    response_set_scenario = dispatcher.process_request(request_set_scenario)
+    assert response_set_scenario.status_code == 201
+
+    response_enable_recording = dispatcher.process_request(request_enable_recording)
+    assert response_enable_recording.status_code == 201
+
+    response_to_be_replayed = dispatcher.process_request(request_to_be_replayed)
+    assert expected_replayed_response == response_to_be_replayed.body
+
+    with raises(DoNotIntercept):
+        dispatcher.process_request(request_to_be_recorded)
+
+    dispatcher.process_response(request_to_be_recorded, response_to_be_recorded)
+
+    service_interactions_dir = temporary_scenarios_dir.join('test_scenario_record_not_empty')
+    assert service_interactions_dir.exists()
+    assert len(service_interactions_dir.listdir()) == 1
+    assert len(service_interactions_dir.join('TestServiceA').listdir()) == 2
+
+    out_file = service_interactions_dir.join('TestServiceA').join('interaction_1.yaml').read()
+    result_recording = yaml_load(out_file)
+    assert expected_recording == result_recording

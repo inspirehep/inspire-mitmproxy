@@ -28,9 +28,10 @@ from pathlib import Path
 from pprint import pformat
 from re import compile
 from threading import Timer
-from typing import Dict, List, Optional, Pattern, Union
+from typing import Any, Dict, List, Optional, Pattern, Union
 
 import requests
+from yaml import dump as yaml_dump
 from yaml import load as yaml_load
 
 from .http import MITMRequest, MITMResponse, response_to_string
@@ -44,13 +45,16 @@ class Interaction:
     DEFAULT_REGEX_MATCH_FIELDS: Dict[str, Pattern[str]] = {}
     DEFAULT_CALLBACK_DELAY = 0.5
 
+    DEFAULT_NAME_PATTERN = 'interaction_{}'
+    DEFAULT_NAME_MATCH_REGEX = compile(r'^interaction_(\d+)$')
+
     def __init__(
         self,
-        name,
+        name: str,
         request: MITMRequest,
         response: MITMResponse,
-        match: Optional[dict],
-        callbacks: Optional[List[dict]],
+        match: Optional[dict] = None,
+        callbacks: Optional[List[dict]] = None,
     ) -> None:
         self.name = name
         self.request = request
@@ -70,6 +74,16 @@ class Interaction:
             match=interaction_dict.get('match'),
             callbacks=interaction_dict.get('callbacks'),
         )
+
+    def to_dict(self) -> dict:
+        serialized_interaction: Dict[str, Any] = {
+            'request': self.request.to_dict(),
+            'response': self.response.to_dict(),
+            'match': self.match,
+            'callbacks': self.callbacks,
+        }
+
+        return serialized_interaction
 
     @property
     def exact_match_fields(self) -> List[str]:
@@ -138,3 +152,53 @@ class Interaction:
                 request=request,
                 delay=callback.get('delay', self.DEFAULT_CALLBACK_DELAY)
             )
+
+    @classmethod
+    def get_next_sequence_number_in_dir(cls, directory: Path) -> int:
+        def _next_sequence_number_after_file(path):
+            if not path.is_file() or path.suffix != '.yaml':
+                return 0
+
+            seq_number_match = cls.DEFAULT_NAME_MATCH_REGEX.match(path.stem)
+            if not seq_number_match:
+                return 0
+
+            cur_seq_number = int(seq_number_match.group(1))
+            return cur_seq_number + 1
+
+        next_seq_number = 0
+        for interaction_path in directory.iterdir():
+            candidate_next_seq_number = _next_sequence_number_after_file(interaction_path)
+            next_seq_number = max(next_seq_number, candidate_next_seq_number)
+
+        return next_seq_number
+
+    @classmethod
+    def next_in_dir(
+        cls,
+        directory: Path,
+        request: MITMRequest,
+        response: MITMResponse
+    ) -> 'Interaction':
+        """Create a new interaction with a name taking from next available in directory."""
+        sequence_number = cls.get_next_sequence_number_in_dir(directory)
+        new_name = cls.DEFAULT_NAME_PATTERN.format(sequence_number)
+        return Interaction(name=new_name, request=request, response=response)
+
+    def save_in_dir(self, directory: Path):
+        """Save the interaction to a file."""
+        output_path = directory / f'{self.name}.yaml'
+        output_path.write_text(yaml_dump(self.to_dict()))
+
+    def __repr__(self):
+        return f'Interaction(name={self.name!r}, request={self.request!r}, ' \
+            f'response={self.response!r}, match={self.match!r}, callbacks={self.callbacks!r})'
+
+    def __eq__(self, other):
+        return (
+            self.name == other.name
+            and self.request == other.request
+            and self.response == other.response
+            and self.match == other.match
+            and self.callbacks == other.callbacks
+        )

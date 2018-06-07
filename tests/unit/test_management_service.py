@@ -191,6 +191,80 @@ def test_management_service_post_config_array_raises(management_service):
         })
 
 
+@mark.parametrize(
+    'request_body, expected_state',
+    [
+        ('{"enable": true}', True),
+        ('{"enable": false}', False),
+    ],
+)
+def test_management_service_set_recording(management_service, request_body, expected_state):
+    expected_response = {
+        'enabled': expected_state,
+    }
+
+    result_response = management_service.set_recording(
+        MITMRequest(
+            method='PUT',
+            url='http://mitm-manager.local/record',
+            body=request_body
+        )
+    )
+
+    result = management_service.is_recording
+
+    assert expected_state == result
+
+    for service in management_service.services:
+        assert expected_state == service.is_recording
+
+    assert expected_response == result_response
+
+
+def test_management_service_set_recording_changes(management_service):
+    initial_state = management_service.is_recording
+    desired_state = not initial_state
+
+    expected_response = {
+        'enabled': desired_state,
+    }
+
+    result_response = management_service.set_recording(
+        MITMRequest(
+            method='PUT',
+            url='http://mitm-manager.local/record',
+            body=f'{{"enable": {"true" if desired_state else "false"}}}'
+        )
+    )
+
+    result = management_service.is_recording
+
+    assert desired_state == result
+
+    for service in management_service.services:
+        assert desired_state == service.is_recording
+
+    assert expected_response == result_response
+
+
+@mark.parametrize(
+    'request_body',
+    [
+        'definitely not valid JSON',
+        '["parses as valid json, but is not a valid record param"]',
+        '{"enable key not here": "wrong"}',
+    ],
+)
+def test_management_service_set_recording_malformed_raises(management_service, request_body):
+    request = MITMRequest(
+        method='PUT',
+        url='http://mitm-manager.local/record',
+        body=request_body
+    )
+    with raises(InvalidRequest):
+        management_service.set_recording(request)
+
+
 def test_management_service_build_response(management_service):
     with patch(
         'inspire_mitmproxy.services.management_service.get_current_version',

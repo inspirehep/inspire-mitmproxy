@@ -55,12 +55,21 @@ class Dispatcher:
         mgmt_service = ManagementService(self.services)
         self.services = [cast(BaseService, mgmt_service)] + self.services
 
-    def process_request(self, request: MITMRequest) -> MITMResponse:
-        """Perform operations and give response."""
+    def find_service_for_request(self, request: MITMRequest) -> BaseService:
         for service in self.services:
             if service.handles_request(request):
-                return service.process_request(request)
+                return service
         raise NoServicesForRequest(request)
+
+    def process_request(self, request: MITMRequest) -> MITMResponse:
+        """Perform operations and give response."""
+        service = self.find_service_for_request(request)
+        return service.process_request(request)
+
+    def process_response(self, request: MITMRequest, response: MITMResponse):
+        """Hook for live responses."""
+        service = self.find_service_for_request(request)
+        service.process_response(request=request, response=response)
 
     def request(self, flow: HTTPFlow):
         """MITMProxy addon event interface for outgoing request."""
@@ -77,3 +86,13 @@ class Dispatcher:
                 content=str(e),
                 headers={'Content-Type': 'text/plain'}
             )
+
+    def response(self, flow: HTTPFlow):
+        if self.is_flow_passed_through(flow):
+            request = MITMRequest.from_mitmproxy(flow.request)
+            response = MITMResponse.from_mitmproxy(flow.response)
+            self.process_response(request, response)
+
+    @staticmethod
+    def is_flow_passed_through(flow: HTTPFlow) -> bool:
+        return flow.server_conn.connected()
