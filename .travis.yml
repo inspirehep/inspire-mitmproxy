@@ -47,8 +47,7 @@ install:
 
 script:
   - chmod +x *.sh
-  - ./run-tests.sh
-  - ./dockerhub-deploy.sh
+  - ./run-tests.sh && ./dockerhub-deploy.sh
 
 after_success:
   - coveralls

@@ -4,7 +4,10 @@ retry() {
     "$@" || "$@" || exit 2
 }
 
-if [[ "$DOCKER_USERNAME" == "" ]] || [[ "$TRAVIS_PULL_REQUEST" == "true" ]]; then
+if [[ "$DOCKER_USERNAME" == "" ]] \
+    || [[ "$TRAVIS_PULL_REQUEST" == "true" ]] \
+    || [[ "$TRAVIS_BRANCH" != "master" ]];
+then
     echo "Not in an official branch, skipping deploy"
     echo "TRAVIS_SECURE_ENV_VARS=$TRAVIS_SECURE_ENV_VARS"
     echo "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"
