@@ -52,6 +52,20 @@ TEST_DICT_RESPONSE_WITH_BYTES_BODY = {
     }
 }
 
+TEST_DICT_RESPONSE_GZIP = {
+    'status': {
+        'code': 200,
+        'message': 'OK'
+    },
+    # gzipped utf-8-encoded "Hello, world!"
+    'body': b'x\x9c\xf3H\xcd\xc9\xc9\xd7Q(\xcf/\xcaIQ\x04\x00 ^\x04\x8a',
+    'headers': {
+        'Content-Type': ['text/plain; charset=UTF-8'],
+        'Date': ['Wed, 21 Mar 2018 12:47:18 GMT'],
+        'Server': ['nginx/1.12.2'],
+        'Content-Encoding': ['gzip']
+    }
+}
 
 TEST_MITM_RESPONSE = HTTPResponse(
     http_version='HTTP/1.1',
@@ -65,6 +79,22 @@ TEST_MITM_RESPONSE = HTTPResponse(
         ]
     ),
     content=b'Witaj, \xb6wiecie!',
+)
+
+TEST_MITM_RESPONSE_GZIP = HTTPResponse(
+    http_version='HTTP/1.1',
+    status_code=200,
+    reason='OK',
+    headers=Headers(
+        fields=[
+            (b'Content-Type', b'text/plain; charset=UTF-8'),
+            (b'Date', b'Wed, 21 Mar 2018 12:47:18 GMT'),
+            (b'Server', b'nginx/1.12.2'),
+            (b'Content-Encoding', b'gzip'),
+        ]
+    ),
+    # gzipped utf-8-encoded "Hello, world!"
+    content=b'x\x9c\xf3H\xcd\xc9\xc9\xd7Q(\xcf/\xcaIQ\x04\x00 ^\x04\x8a',
 )
 
 TEST_RESPONSE = MITMResponse(
@@ -93,10 +123,30 @@ TEST_RESPONSE_WITH_BYTES_BODY = MITMResponse(
     http_version='HTTP/1.1',
 )
 
+TEST_RESPONSE_GZIP = MITMResponse(
+    status_code=200,
+    status_message='OK',
+    headers=MITMHeaders({
+        'Content-Type': ['text/plain; charset=UTF-8'],
+        'Date': ['Wed, 21 Mar 2018 12:47:18 GMT'],
+        'Server': ['nginx/1.12.2'],
+        'Content-Encoding': ['gzip']
+    }),
+    # gzipped utf-8-encoded "Hello, world!"
+    body=b'x\x9c\xf3H\xcd\xc9\xc9\xd7Q(\xcf/\xcaIQ\x04\x00 ^\x04\x8a',
+)
+
 
 def test_response_from_mitmproxy():
     result = MITMResponse.from_mitmproxy(TEST_MITM_RESPONSE)
     expected = TEST_RESPONSE
+
+    assert result == expected
+
+
+def test_response_from_mitmproxy_gzip():
+    result = MITMResponse.from_mitmproxy(TEST_MITM_RESPONSE_GZIP)
+    expected = TEST_RESPONSE_GZIP
 
     assert result == expected
 
@@ -108,6 +158,13 @@ def test_response_from_dict():
     assert result == expected
 
 
+def test_response_from_dict_gzip():
+    result = MITMResponse.from_dict(TEST_DICT_RESPONSE_GZIP)
+    expected = TEST_RESPONSE_GZIP
+
+    assert result == expected
+
+
 def test_response_to_mitmproxy():
     result = TEST_RESPONSE.to_mitmproxy()
     expected = TEST_MITM_RESPONSE
@@ -115,9 +172,23 @@ def test_response_to_mitmproxy():
     assert result == expected
 
 
+def test_response_to_mitmproxy_gzip():
+    result = TEST_RESPONSE_GZIP.to_mitmproxy()
+    expected = TEST_MITM_RESPONSE_GZIP
+
+    assert result == expected
+
+
 def test_response_to_dict():
     result = TEST_RESPONSE.to_dict()
     expected = TEST_DICT_RESPONSE
+
+    assert result == expected
+
+
+def test_response_to_dict_gzip():
+    result = TEST_RESPONSE_GZIP.to_dict()
+    expected = TEST_DICT_RESPONSE_GZIP
 
     assert result == expected
 

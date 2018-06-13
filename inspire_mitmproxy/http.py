@@ -160,7 +160,7 @@ class MITMRequest:
         return cls(
             url=request.url,
             method=request.method,
-            body=request.content,
+            body=request.raw_content,
             headers=MITMHeaders.from_mitmproxy(request.headers),
             original_encoding=encoding,
             http_version=request.http_version,
@@ -194,10 +194,15 @@ class MITMRequest:
         )
 
     def to_dict(self) -> Dict[str, Any]:
+        try:
+            serialised_body: Union[str, bytes] = self.body.decode(self.original_encoding)
+        except UnicodeDecodeError:
+            serialised_body = self.body
+
         return {
             'method': self.method,
             'url': self.url,
-            'body': self.body.decode(self.original_encoding),
+            'body': serialised_body,
             'headers': self.headers.to_dict(),
         }
 
@@ -247,7 +252,7 @@ class MITMResponse:
         return cls(
             status_code=response.status_code,
             status_message=response.reason,
-            body=response.content.decode(encoding),
+            body=response.raw_content,
             headers=MITMHeaders.from_mitmproxy(response.headers),
             original_encoding=encoding,
             http_version=response.http_version,
@@ -272,12 +277,17 @@ class MITMResponse:
         )
 
     def to_dict(self) -> Dict[str, Any]:
+        try:
+            serialised_body: Union[str, bytes] = self.body.decode(self.original_encoding)
+        except UnicodeDecodeError:
+            serialised_body = self.body
+
         return {
             'status': {
                 'code': self.status_code,
                 'message': self.status_message,
             },
-            'body': self.body.decode(self.original_encoding),
+            'body': serialised_body,
             'headers': self.headers.to_dict(),
         }
 
