@@ -163,5 +163,5 @@ class ManagementService(BaseService):
     def propagate_option_changes(self):
         """On change of config, propagate relevant information to services."""
         for service in self.services:
-            service.active_scenario = self.get_active_scenario()
+            service.set_active_scenario(self.get_active_scenario())
             service.is_recording = self.is_recording
