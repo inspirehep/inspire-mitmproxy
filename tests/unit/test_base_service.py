@@ -34,7 +34,7 @@ from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
 from inspire_mitmproxy.services import BaseService
 
 
-@fixture
+@fixture(scope='function')
 def service():
     class TestService(BaseService):
         SERVICE_HOSTS = ['host_a.local', 'host_b.local']
@@ -374,3 +374,32 @@ def test_get_interactions_for_active_scenario_raises(service: BaseService, scena
 
     with raises(ScenarioNotInService):
         service.get_interactions_for_active_scenario()
+
+
+def test_set_scenario_resets_interaction_count(service: BaseService):
+    initial_interactions = {
+        'scenario_entered': {
+            'interaction_0': {
+                'num_calls': 3,
+            },
+            'interaction_1': {
+                'num_calls': 1,
+            }
+        },
+        'scenario_irrelevant': {
+            'interaction': 42,
+        },
+    }
+
+    expected = {
+        'scenario_entered': {},
+        'scenario_irrelevant': {
+            'interaction': 42,
+        },
+    }
+
+    service.interactions_replayed = initial_interactions
+    service.set_active_scenario('scenario_entered')
+    result = service.interactions_replayed
+
+    assert expected == result

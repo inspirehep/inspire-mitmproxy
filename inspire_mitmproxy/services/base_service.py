@@ -46,6 +46,10 @@ class BaseService:
     def name(self):
         return type(self).__name__
 
+    def set_active_scenario(self, active_scenario: str):
+        self.active_scenario = active_scenario
+        self.interactions_replayed[self.active_scenario] = {}
+
     def handles_request(self, request: MITMRequest) -> bool:
         """Can this service handle the request?"""
         try:
