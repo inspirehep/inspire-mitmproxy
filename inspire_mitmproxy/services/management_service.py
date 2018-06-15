@@ -39,11 +39,13 @@ from ..services import BaseService
 
 
 class ManagementService(BaseService):
-    SERVICE_HOSTS = ['mitm-manager.local']
     INTERACTIONS_ENDPOINT = compile(r'/service/(\w+)/interactions')
 
     def __init__(self, services: List[BaseService]) -> None:
-        super(ManagementService, self).__init__()
+        super(ManagementService, self).__init__(
+            name='ManagementService',
+            hosts_list=['mitm-manager.local'],
+        )
 
         self.services = services
         self.config = {
@@ -85,7 +87,7 @@ class ManagementService(BaseService):
         return {
             idx: {
                 'class': service.name,
-                'service_hosts': service.SERVICE_HOSTS,
+                'hosts_list': service.hosts_list,
             }
             for idx, service in enumerate([cast(BaseService, self)] + self.services)
         }

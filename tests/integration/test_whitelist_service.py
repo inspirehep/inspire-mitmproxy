@@ -22,23 +22,28 @@
 
 """Tests for the WhitelistService"""
 
-from mock import patch
-from pytest import fixture, raises
+import pytest
 
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import DoNotIntercept
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest
-from inspire_mitmproxy.services.whitelist_service import WhitelistService
+from inspire_mitmproxy.services import WhitelistService
 
 
-@fixture(scope='function')
+@pytest.fixture(scope='function')
 def dispatcher() -> Dispatcher:
-    with patch.object(Dispatcher, 'SERVICE_LIST', [WhitelistService]):
-        return Dispatcher()
+    return Dispatcher(
+        service_list=[
+            WhitelistService(
+                name='WhitelistService',
+                hosts_list=['test-indexer'],
+            ),
+        ]
+    )
 
 
 def test_whitelist_service_raises(dispatcher):
-    with raises(DoNotIntercept):
+    with pytest.raises(DoNotIntercept):
         dispatcher.process_request(
             MITMRequest(
                 method='GET',
@@ -48,5 +53,24 @@ def test_whitelist_service_raises(dispatcher):
                     'Host': ['test-indexer:9200'],
                     'Accept': ['application/json'],
                 })
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    'service_url',
+    [
+        'http://test-indexer:9200/records-hep',
+        'http://test-web-e2e.local:5000/',
+        'http://test-scrapyd:6123',
+    ]
+)
+def test_whitelist_service_defaults(service_url):
+    dispatcher = Dispatcher()
+    with pytest.raises(DoNotIntercept):
+        dispatcher.process_request(
+            MITMRequest(
+                method='GET',
+                url=service_url,
             )
         )

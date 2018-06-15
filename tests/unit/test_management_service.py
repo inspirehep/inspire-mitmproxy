@@ -34,10 +34,11 @@ from inspire_mitmproxy.services import BaseService, ManagementService
 
 @fixture(scope='function')
 def management_service() -> ManagementService:
-    class TestService(BaseService):
-        SERVICE_HOSTS = ['test-service.local']
-
-    mgmt_service = ManagementService([TestService()])
+    mgmt_service = ManagementService(
+        [
+            BaseService(name='TestService', hosts_list=['test-service.local']),
+        ]
+    )
 
     mgmt_service.config = {
         'active_scenario': None,
@@ -75,11 +76,11 @@ def test_management_service_get_services(management_service):
     expected = {
         0: {
             'class': 'ManagementService',
-            'service_hosts': ['mitm-manager.local']
+            'hosts_list': ['mitm-manager.local']
         },
         1: {
             'class': 'TestService',
-            'service_hosts': ['test-service.local']
+            'hosts_list': ['test-service.local']
         }
     }
 

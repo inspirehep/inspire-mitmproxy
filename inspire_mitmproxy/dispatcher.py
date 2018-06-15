@@ -23,35 +23,44 @@
 """Dispatcher forwards requests to Services."""
 
 from logging import getLogger
-from typing import List, Type, cast
+from typing import List, Optional, cast
 
 from mitmproxy.http import HTTPFlow, HTTPResponse
 
 from .errors import DoNotIntercept, NoServicesForRequest
 from .http import MITMRequest, MITMResponse
-from .services import (
-    ArxivService,
-    BaseService,
-    LegacyService,
-    ManagementService,
-    RTService,
-    WhitelistService
-)
+from .services import BaseService, ManagementService, WhitelistService
 
 
 logger = getLogger(__name__)
 
 
 class Dispatcher:
-    SERVICE_LIST: List[Type[BaseService]] = [
-        ArxivService,
-        LegacyService,
-        RTService,
-        WhitelistService,
+    DEFAULT_SERVICE_LIST: List[BaseService] = [
+        BaseService(
+            name='ArxivService',
+            hosts_list=['arxiv.org', 'export.arxiv.org'],
+        ),
+        BaseService(
+            name='LegacyService',
+            hosts_list=['inspirehep.net'],
+        ),
+        BaseService(
+            name='RTService',
+            hosts_list=['inspirevm13.cern.ch', 'rt.inspirehep.net'],
+        ),
+        WhitelistService(
+            name='WhitelistService',
+            hosts_list=['test-indexer', 'test-scrapyd', 'test-web-e2e.local'],
+        ),
     ]
 
-    def __init__(self) -> None:
-        self.services = [service_class() for service_class in self.SERVICE_LIST]
+    def __init__(self, service_list: Optional[List[BaseService]]=None) -> None:
+        service_list = service_list or self.DEFAULT_SERVICE_LIST
+        self.set_service_list(service_list=service_list)
+
+    def set_service_list(self, service_list: List[BaseService]):
+        self.services = service_list
         mgmt_service = ManagementService(self.services)
         self.services = [cast(BaseService, mgmt_service)] + self.services
 

@@ -20,38 +20,47 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from mock import patch
+import json
+
 from pytest import fixture, mark, raises
 
+from inspire_mitmproxy import services
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import NoServicesForRequest
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
-from inspire_mitmproxy.services import BaseService
 
 
-def make_test_service(url, message):
-    class TestService(BaseService):
-        SERVICE_HOSTS = [url]
-
-        def process_request(self, request: dict):
-            return MITMResponse(
-                body=message,
-                headers=MITMHeaders({
-                    'Content-Type': ['text/plain'],
-                })
-            )
-
-    return TestService
+class TestService(services.BaseService):
+    def process_request(self, request: dict):
+        return MITMResponse(
+            body=self.name,
+            headers=MITMHeaders({
+                'Content-Type': ['text/plain'],
+            })
+        )
 
 
 @fixture(scope='module')
 def dispatcher():
-    with patch.object(Dispatcher, 'SERVICE_LIST', [
-        make_test_service('test-service-a.local', 'TestServiceA'),
-        make_test_service('test-service-b.local', 'TestServiceB'),
-        make_test_service('test-service-a.local', 'TestServiceC'),
-    ]):
-        return Dispatcher()
+    return Dispatcher(
+        service_list=[
+            TestService(
+                name='TestServiceA',
+                hosts_list=['test-service-a.local'],
+
+            ),
+            TestService(
+                name='TestServiceB',
+                hosts_list=['test-service-b.local'],
+
+            ),
+            TestService(
+                name='TestServiceC',
+                hosts_list=['test-service-a.local'],
+
+            ),
+        ],
+    )
 
 
 @mark.parametrize(
@@ -90,3 +99,48 @@ def test_dispatcher_process_request_fail_if_none_match(dispatcher):
                 })
             )
         )
+
+
+def test_dispatcher_default_services():
+    dispatcher = Dispatcher()
+    result = dispatcher.process_request(
+        MITMRequest(url='http://mitm-manager.local/services')
+    )
+
+    expected = {
+        "0": {
+            "class": "ManagementService",
+            "hosts_list": [
+                "mitm-manager.local"
+            ]
+        },
+        "1": {
+            "class": "ArxivService",
+            "hosts_list": [
+                "arxiv.org",
+                "export.arxiv.org"
+            ]
+        },
+        "2": {
+            "class": "LegacyService",
+            "hosts_list": [
+                "inspirehep.net"
+            ]
+        },
+        "3": {
+            "class": "RTService",
+            "hosts_list": [
+                "inspirevm13.cern.ch",
+                "rt.inspirehep.net"
+            ]
+        },
+        "4": {
+            "class": "WhitelistService",
+            "hosts_list": [
+                "test-indexer", "test-scrapyd", "test-web-e2e.local",
+            ]
+        }
+    }
+    json_response = json.loads(result.body)
+
+    assert json_response == expected
