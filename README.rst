@@ -44,3 +44,10 @@ About
 =====
 
 Man-In-The-Middle Proxy tools for running end-to-end tests in INSPIRE.
+
+
+Documentation
+=============
+
+Documentation for inspire-mitmproxy can be found here: 
+`<https://inspirehep.github.io/inspire-mitmproxy/>`_
