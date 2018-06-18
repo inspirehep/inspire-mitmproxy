@@ -29,13 +29,12 @@ from ..services import BaseService
 
 
 class WhitelistService(BaseService):
-    DEFAULT_HOSTS: str = 'test-indexer test-scrapyd test-web-e2e.local'
-
     def __init__(self, *args, **kwargs):
-        self.SERVICE_HOSTS = os.environ.get(
-            'MITM_PROXY_WHITELIST',
-            self.DEFAULT_HOSTS
-        ).split()
+        if 'MITM_PROXY_WHITELIST' in os.environ:
+            kwargs['hosts_list'] = os.environ['MITM_PROXY_WHITELIST'].split()
+        else:
+            kwargs['hosts_list'] = kwargs.get('hosts_list', [])
+
         super().__init__(*args, **kwargs)
 
     def process_request(self, request: MITMRequest):

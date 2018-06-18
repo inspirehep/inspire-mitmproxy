@@ -35,16 +35,12 @@ from ..interaction import Interaction
 
 class BaseService:
     """Mocked service base."""
-    SERVICE_HOSTS: List[str] = []
-
-    def __init__(self):
+    def __init__(self, name: str, hosts_list: List[str]) -> None:
+        self.name = name
         self.active_scenario: str = 'default'
         self.interactions_replayed: Dict[str, Dict[str, Dict[str, Any]]] = {}
         self.is_recording = False
-
-    @property
-    def name(self):
-        return type(self).__name__
+        self.hosts_list = hosts_list
 
     def set_active_scenario(self, active_scenario: str):
         self.active_scenario = active_scenario
@@ -57,7 +53,7 @@ class BaseService:
         except (TypeError, KeyError):
             host = urlparse(request.url).hostname
 
-        return host in self.SERVICE_HOSTS
+        return host in self.hosts_list
 
     def _get_first_matching_interaction(self, request):
         for interaction in self.get_interactions_for_active_scenario():

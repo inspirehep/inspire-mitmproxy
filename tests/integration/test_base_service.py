@@ -37,28 +37,20 @@ from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
 from inspire_mitmproxy.services import BaseService
 
 
-@fixture
-def service_a():
-    class TestServiceA(BaseService):
-        SERVICE_HOSTS = ['host_a.local']
-        active_scenario = None
-
-    return TestServiceA
-
-
-@fixture
-def service_b():
-    class TestServiceB(BaseService):
-        SERVICE_HOSTS = ['host_b.local']
-        active_scenario = None
-
-    return TestServiceB
-
-
 @fixture(scope='function')
-def dispatcher(scenarios_dir, service_a, service_b) -> Dispatcher:
-    with patch.object(Dispatcher, 'SERVICE_LIST', [service_a, service_b]):
-        return Dispatcher()
+def dispatcher(scenarios_dir) -> Dispatcher:
+    return Dispatcher(
+        service_list=[
+            BaseService(
+                name='TestServiceA',
+                hosts_list=['host_a.local'],
+            ),
+            BaseService(
+                name='TestServiceB',
+                hosts_list=['host_b.local'],
+            ),
+        ],
+    )
 
 
 @fixture

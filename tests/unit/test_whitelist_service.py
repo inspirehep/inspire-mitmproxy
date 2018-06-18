@@ -34,16 +34,20 @@ def test_load_services_from_os():
     custom_environ = {'MITM_PROXY_WHITELIST': 'my-indexer my-worker'}
 
     with patch.dict(os.environ, custom_environ):
-        service = WhitelistService()
-        whitelist = service.SERVICE_HOSTS
+        service = WhitelistService(name='WhitelistService')
+        whitelist = service.hosts_list
 
     assert whitelist == expected_whitelist
 
 
-def test_load_default_hosts():
+def test_env_services_have_priority():
     expected_whitelist = ['test-indexer', 'test-scrapyd', 'test-web-e2e.local']
 
-    service = WhitelistService()
-    whitelist = service.SERVICE_HOSTS
+    custom_environ = {'MITM_PROXY_WHITELIST': ' '.join(expected_whitelist)}
+
+    with patch.dict(os.environ, custom_environ):
+        service = WhitelistService(name='WhitelistService', hosts_list=[])
+
+    whitelist = service.hosts_list
 
     assert whitelist == expected_whitelist

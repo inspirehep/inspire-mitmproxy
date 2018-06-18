@@ -36,14 +36,12 @@ from inspire_mitmproxy.services import BaseService
 
 @fixture(scope='function')
 def service():
-    class TestService(BaseService):
-        SERVICE_HOSTS = ['host_a.local', 'host_b.local']
-
-        def __init__(self):
-            super().__init__()
-            self.active_scenario = 'test_scenario'
-
-    return TestService()
+    test_service = BaseService(
+        name='TestService',
+        hosts_list=['host_a.local', 'host_b.local'],
+    )
+    test_service.set_active_scenario('test_scenario')
+    return test_service
 
 
 @fixture
