@@ -30,8 +30,16 @@ from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
 from inspire_mitmproxy.interaction import Interaction
 
 
+TEST_REQUEST_ALL_FIELDS = MITMRequest(
+    body=b'very nice body that does match\n',
+    headers=MITMHeaders({'Host': ['test.local']}),
+    method='POST',
+    url='https://test.local/path',
+)
+
+
 TEST_REQUEST = MITMRequest(
-    body=None,
+    body='',
     headers=MITMHeaders({'Host': ['test.local']}),
     method='GET',
     url='https://test.local/path',
@@ -79,8 +87,6 @@ TEST_MATCH_REQUEST_DATA_NEGATIVE = _test_match_request_data_generate_requests((
     ('POST', 'Wrong body', 'https://test.local/42/details', _get_headers(good=False)),
     ('POST', 'Wrong body', 'https://test.local/bad_url/details', _get_headers(good=True)),
     ('POST', 'Wrong body', 'https://test.local/bad_url/details', _get_headers(good=False)),
-    ('POST', '', 'https://test.local/42/details', _get_headers(good=True)),
-    ('POST', '', 'https://test.local/42/details', _get_headers(good=False)),
     ('POST', '', 'https://test.local/bad_url/details', _get_headers(good=True)),
     ('POST', '', 'https://test.local/bad_url/details', _get_headers(good=False)),
     ('GET', 'Wrong body', 'https://test.local/42/details', _get_headers(good=True)),
@@ -89,12 +95,15 @@ TEST_MATCH_REQUEST_DATA_NEGATIVE = _test_match_request_data_generate_requests((
     ('GET', 'Wrong body', 'https://test.local/bad_url/details', _get_headers(good=False)),
     ('GET', '', 'https://test.local/bad_url/details', _get_headers(good=True)),
     ('GET', '', 'https://test.local/bad_url/details', _get_headers(good=False)),
+    ('GET', '', 'https://test.local/42/details', _get_headers(good=True)),
+    ('GET', '', 'https://test.local/42/details', _get_headers(good=False)),
 ))
 
 
 TEST_MATCH_REQUEST_DATA_POSITIVE = _test_match_request_data_generate_requests((
-    ('GET', '', 'https://test.local/42/details', _get_headers(good=True)),
-    ('GET', '', 'https://test.local/42/details', _get_headers(good=False)),
+    ('POST', 'this does match', 'https://test.local/42/details', _get_headers(good=True)),
+    ('POST', 'this does match', 'https://test.local/42/details', _get_headers(good=False)),
+    ('POST', b'this does match', 'https://test.local/42/details', _get_headers(good=False)),
 ))
 
 
@@ -108,6 +117,15 @@ TEST_MATCH_REQUEST_DATA: dict = {
 
 @fixture(scope='module')
 def interaction_all_fields(request):
+    ('GET', '', 'https://test.local/bad_url/details', _get_headers(good=False)),
+    return Interaction.from_file(
+        Path(request.fspath.join('../fixtures/test_interaction_detailed.yaml'))
+    )
+
+
+@fixture(scope='module')
+def interaction_all_fields_regex_in_body(request):
+    ('POST', '', 'https://test.local/bad_url/details', _get_headers(good=False)),
     return Interaction.from_file(
         Path(request.fspath.join('../fixtures/test_interaction_detailed.yaml'))
     )
@@ -128,10 +146,11 @@ def interaction_regex_but_no_exact(request):
 
 
 def test_interaction_all_fields(interaction_all_fields: Interaction):
-    assert interaction_all_fields.request == TEST_REQUEST
+    assert interaction_all_fields.request == TEST_REQUEST_ALL_FIELDS
     assert interaction_all_fields.response == TEST_RESPONSE
-    assert interaction_all_fields.exact_match_fields == ['method', 'body']
+    assert interaction_all_fields.exact_match_fields == ['method']
     assert interaction_all_fields.regex_match_fields == {
+        'body': compile('.*does match.*'),
         'url': compile(r'https://test\.local/\d+/details')
     }
 
@@ -155,12 +174,12 @@ def test_interaction_partial(interaction_regex_but_no_exact: Interaction):
 def test_interaction_to_dict(interaction_all_fields: Interaction):
     expected = {
         'request': {
-            'body': '',
+            'body': 'very nice body that does match\n',
             'headers': {
                 'Host': ['test.local'],
             },
             'url': 'https://test.local/path',
-            'method': 'GET',
+            'method': 'POST',
         },
         'response': {
             'body': '{"key": "value"}',
@@ -174,9 +193,10 @@ def test_interaction_to_dict(interaction_all_fields: Interaction):
         },
         'match': {
             'regex': {
+                'body': '.*does match.*',
                 'url': 'https://test\.local/\d+/details',
             },
-            'exact': ['method', 'body'],
+            'exact': ['method'],
         },
         'callbacks': [
             {
