@@ -37,6 +37,7 @@ can be anything, and is only for informative purposes. When recorded automatical
 are named in sequence of `interaction_0.yaml`, `interaction_1.yaml`, and so on.
 """
 
+from functools import singledispatch
 from logging import getLogger
 from os.path import expandvars
 from pathlib import Path
@@ -53,6 +54,24 @@ from .http import MITMRequest, MITMResponse, response_to_string
 
 
 logger = getLogger(__name__)
+
+
+@singledispatch
+def try_to_stringify(bytes_or_string: Union[str, bytes], encoding: Optional[str]):
+    raise Exception("Unable to stringify %r" % bytes_or_string)
+
+
+@try_to_stringify.register(str)
+def try_to_stringify_str(byte_or_string: str, encoding: Optional[str]):
+    return byte_or_string
+
+
+@try_to_stringify.register(bytes)
+def try_to_stringify_bytes(byte_or_string: bytes, encoding: Optional[str]):
+    if encoding:
+        return byte_or_string.decode(encoding)
+
+    return byte_or_string.decode()
 
 
 class Interaction:
@@ -132,7 +151,8 @@ class Interaction:
 
     def _matches_by_regex_rules(self, request: MITMRequest) -> bool:
         for match_on, regex in self.regex_match_fields.items():
-            if not regex.match(request[match_on]):
+            match_on_str = try_to_stringify(request[match_on], encoding=request.original_encoding)
+            if not regex.match(match_on_str):
                 return False
 
         return True

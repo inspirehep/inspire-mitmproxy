@@ -1,8 +1,9 @@
 request:
-  body: null
+  # echo 'very nice body that does match' | base64
+  body: !!binary dmVyeSBuaWNlIGJvZHkgdGhhdCBkb2VzIG1hdGNoCg==
   headers:
     Host: [test.local]
-  method: GET
+  method: POST
   url: https://test.local/path
 response:
   body: !!python/unicode '{"key": "value"}'
@@ -14,8 +15,8 @@ response:
 match:
   exact:
   - method
-  - body
   regex:
+    body: '.*does match.*'
     url: 'https://test\.local/\d+/details'
 callbacks:
 - delay: 2
