@@ -23,13 +23,16 @@
 """Dispatcher forwards requests to Services."""
 
 from logging import getLogger
-from typing import List, Optional, cast
+from typing import List, Optional
 
 from mitmproxy.http import HTTPFlow, HTTPResponse
 
 from .errors import DoNotIntercept, NoServicesForRequest
 from .http import MITMRequest, MITMResponse
-from .services import BaseService, ManagementService, WhitelistService
+from .service_list import ServiceList
+from .services.base_service import BaseService
+from .services.management_service import ManagementService
+from .services.whitelist_service import WhitelistService
 
 
 logger = getLogger(__name__)
@@ -56,13 +59,9 @@ class Dispatcher:
     ]
 
     def __init__(self, service_list: Optional[List[BaseService]]=None) -> None:
-        service_list = service_list or self.DEFAULT_SERVICE_LIST
-        self.set_service_list(service_list=service_list)
-
-    def set_service_list(self, service_list: List[BaseService]):
-        self.services = service_list
+        self.services = ServiceList(service_list or self.DEFAULT_SERVICE_LIST)
         mgmt_service = ManagementService(self.services)
-        self.services = [cast(BaseService, mgmt_service)] + self.services
+        self.services.prepend(mgmt_service)
 
     def find_service_for_request(self, request: MITMRequest) -> BaseService:
         for service in self.services:

@@ -75,3 +75,17 @@ class ScenarioNotInService(MITMProxyHTTPError):
         self.http_status_code = 501
         message = f"Scenario {scenario} not found in service {service_name}"
         super().__init__(message)
+
+
+class InvalidServiceType(MITMProxyHTTPError):
+    def __init__(self, service_type: str) -> None:
+        self.http_status_code = 400
+        message = f"Service type {service_type} is not a valid service type"
+        super().__init__(message)
+
+
+class InvalidServiceParams(MITMProxyHTTPError):
+    def __init__(self, service_type: str, params: dict) -> None:
+        self.http_status_code = 400
+        message = f"Service of type {service_type} cannot be instantiated with params: {params!r}"
+        super().__init__(message)

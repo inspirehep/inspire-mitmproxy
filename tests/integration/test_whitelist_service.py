@@ -27,7 +27,7 @@ import pytest
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import DoNotIntercept
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest
-from inspire_mitmproxy.services import WhitelistService
+from inspire_mitmproxy.services.whitelist_service import WhitelistService
 
 
 @pytest.fixture(scope='function')

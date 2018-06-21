@@ -24,13 +24,13 @@ import json
 
 from pytest import fixture, mark, raises
 
-from inspire_mitmproxy import services
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import NoServicesForRequest
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
+from inspire_mitmproxy.services.base_service import BaseService
 
 
-class TestService(services.BaseService):
+class TestService(BaseService):
     def process_request(self, request: dict):
         return MITMResponse(
             body=self.name,
@@ -108,38 +108,45 @@ def test_dispatcher_default_services():
     )
 
     expected = {
-        "0": {
-            "class": "ManagementService",
-            "hosts_list": [
-                "mitm-manager.local"
-            ]
-        },
-        "1": {
-            "class": "ArxivService",
-            "hosts_list": [
-                "arxiv.org",
-                "export.arxiv.org"
-            ]
-        },
-        "2": {
-            "class": "LegacyService",
-            "hosts_list": [
-                "inspirehep.net"
-            ]
-        },
-        "3": {
-            "class": "RTService",
-            "hosts_list": [
-                "inspirevm13.cern.ch",
-                "rt.inspirehep.net"
-            ]
-        },
-        "4": {
-            "class": "WhitelistService",
-            "hosts_list": [
-                "test-indexer", "test-scrapyd", "test-web-e2e.local",
-            ]
-        }
+        'services': [
+            {
+                "type": "ManagementService",
+                "name": "ManagementService",
+                "hosts_list": [
+                    "mitm-manager.local"
+                ]
+            },
+            {
+                "type": "BaseService",
+                "name": "ArxivService",
+                "hosts_list": [
+                    "arxiv.org",
+                    "export.arxiv.org"
+                ]
+            },
+            {
+                "type": "BaseService",
+                "name": "LegacyService",
+                "hosts_list": [
+                    "inspirehep.net"
+                ]
+            },
+            {
+                "type": "BaseService",
+                "name": "RTService",
+                "hosts_list": [
+                    "inspirevm13.cern.ch",
+                    "rt.inspirehep.net"
+                ]
+            },
+            {
+                "type": "WhitelistService",
+                "name": "WhitelistService",
+                "hosts_list": [
+                    "test-indexer", "test-scrapyd", "test-web-e2e.local",
+                ]
+            }
+        ]
     }
     json_response = json.loads(result.body)
 

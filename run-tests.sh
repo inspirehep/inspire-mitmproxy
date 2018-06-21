@@ -34,7 +34,7 @@ flake8 .
 
 echo "Running MyPy"
 export MYPYPATH="${VIRTUAL_ENV}/lib/python3.6/site-packages/"
-mypy --follow-imports=silent .
+mypy --follow-imports=silent --no-incremental .
 
 echo "Runnning PyTest"
 pytest --cov=inspire_mitmproxy \

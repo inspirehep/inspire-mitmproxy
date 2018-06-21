@@ -34,7 +34,7 @@ from yaml import load as yaml_load
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.errors import DoNotIntercept, ScenarioNotInService, ServiceNotFound
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
-from inspire_mitmproxy.services import BaseService
+from inspire_mitmproxy.services.base_service import BaseService
 
 
 @fixture(scope='function')

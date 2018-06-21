@@ -35,13 +35,14 @@ from autosemver.packaging import get_current_version
 
 from ..errors import InvalidRequest, RequestNotHandledInService, ServiceNotFound
 from ..http import MITMHeaders, MITMRequest, MITMResponse
-from ..services import BaseService
+from ..service_list import ServiceList
+from ..services.base_service import BaseService
 
 
 class ManagementService(BaseService):
     INTERACTIONS_ENDPOINT = compile(r'/service/(\w+)/interactions')
 
-    def __init__(self, services: List[BaseService]) -> None:
+    def __init__(self, services: ServiceList) -> None:
         super(ManagementService, self).__init__(
             name='ManagementService',
             hosts_list=['mitm-manager.local'],
@@ -64,6 +65,8 @@ class ManagementService(BaseService):
 
         if path == '/services' and method == 'GET':
             return self.build_response(200, self.get_services())
+        elif path == '/services' and method in ('POST', 'PUT'):
+            return self.build_response(201, self.set_services(request))
         elif self.INTERACTIONS_ENDPOINT.match(path) and method == 'GET':
             match = cast(Match[str], self.INTERACTIONS_ENDPOINT.match(path))
             service_name = match.group(1)
@@ -85,12 +88,19 @@ class ManagementService(BaseService):
 
     def get_services(self) -> dict:
         return {
-            idx: {
-                'class': service.name,
-                'hosts_list': service.hosts_list,
-            }
-            for idx, service in enumerate([cast(BaseService, self)] + self.services)
+            'services': self.services.to_list()
         }
+
+    def set_services(self, request: MITMRequest) -> dict:
+        try:
+            new_services = json_loads(request.body)
+            self.services.replace_from_descrition(new_services['services'])
+            self.services.prepend(self)
+            return {
+                'services': self.services.to_list()
+            }
+        except (JSONDecodeError, KeyError, ValueError):
+            raise InvalidRequest(self.name, request)
 
     def get_scenarios(self) -> dict:
         path = Path(environ.get('SCENARIOS_PATH', './scenarios/'))

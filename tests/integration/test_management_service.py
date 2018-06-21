@@ -22,15 +22,15 @@
 
 """Tests for the ManagementService"""
 
-from json import loads as json_loads
+import json
 from os import environ
 
 from mock import patch
-from pytest import fixture
+from pytest import fixture, mark
 
 from inspire_mitmproxy.dispatcher import Dispatcher
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest
-from inspire_mitmproxy.services import BaseService
+from inspire_mitmproxy.services.base_service import BaseService
 
 
 @fixture(scope='function')
@@ -81,18 +81,73 @@ def test_management_service_get_services(dispatcher):
     )
 
     expected = {
-        '0': {
-            'class': 'ManagementService',
-            'hosts_list': ['mitm-manager.local'],
-        },
-        '1': {
-            'class': 'TestService',
-            'hosts_list': ['test-service.local'],
-        },
+        'services': [
+            {
+                'type': 'ManagementService',
+                'name': 'ManagementService',
+                'hosts_list': ['mitm-manager.local'],
+            },
+            {
+                'type': 'BaseService',
+                'name': 'TestService',
+                'hosts_list': ['test-service.local'],
+            },
+        ],
     }
 
     assert result.status_code == 200
-    assert json_loads(result.body) == expected
+    assert json.loads(result.body) == expected
+
+
+@mark.parametrize('method', ('PUT', 'POST'))
+def test_management_service_set_services(method, dispatcher):
+    result = dispatcher.process_request(
+        MITMRequest(
+            method=method,
+            url='http://mitm-manager.local/services',
+            headers=MITMHeaders({
+                'Host': ['mitm-manager.local'],
+                'Accept': ['application/json'],
+            }),
+            body=json.dumps({
+                'services': [
+                    {
+                        'type': 'BaseService',
+                        'name': 'ExternalService',
+                        'hosts_list': ['external_service.local'],
+                    },
+                    {
+                        'type': 'WhitelistService',
+                        'name': 'WhitelistService',
+                        'hosts_list': ['let_me_pass.local'],
+                    }
+                ]
+            })
+        )
+    )
+
+    expected = {
+        'services': [
+            {
+                'type': 'ManagementService',
+                'name': 'ManagementService',
+                'hosts_list': ['mitm-manager.local'],
+            },
+            {
+                'type': 'BaseService',
+                'name': 'ExternalService',
+                'hosts_list': ['external_service.local'],
+            },
+            {
+                'type': 'WhitelistService',
+                'name': 'WhitelistService',
+                'hosts_list': ['let_me_pass.local'],
+            }
+        ]
+    }
+
+    assert result.status_code == 201
+    assert json.loads(result.body) == expected
 
 
 def test_management_service_get_scenarios(fake_scenarios_dir, dispatcher):
@@ -122,7 +177,7 @@ def test_management_service_get_scenarios(fake_scenarios_dir, dispatcher):
     }
 
     assert result.status_code == 200
-    assert json_loads(result.body) == expected
+    assert json.loads(result.body) == expected
 
 
 def test_management_service_get_config(dispatcher):
@@ -142,7 +197,7 @@ def test_management_service_get_config(dispatcher):
     }
 
     assert result.status_code == 200
-    assert json_loads(result.body) == expected
+    assert json.loads(result.body) == expected
 
 
 def test_management_service_post_and_put_config(dispatcher):
@@ -189,4 +244,4 @@ def test_management_service_post_and_put_config(dispatcher):
     result = dispatcher.process_request(get_config_request)
     assert result.status_code == 200
 
-    assert json_loads(result.body) == expected_config
+    assert json.loads(result.body) == expected_config
