@@ -129,3 +129,20 @@ class BaseService:
             raise ScenarioNotInService(self.name, self.active_scenario)
 
         return self.get_interactions_in_scenario(scenario_dir)
+
+    def __eq__(self, other) -> bool:
+        return (
+            type(self) == type(other) and
+            self.name == other.name and
+            self.hosts_list == other.hosts_list
+        )
+
+    def __repr__(self) -> str:
+        return f'{type(self).__name__}(name={self.name!r}, hosts_list={self.hosts_list!r})'
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'type': type(self).__name__,
+            'name': self.name,
+            'hosts_list': self.hosts_list,
+        }

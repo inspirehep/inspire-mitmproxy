@@ -25,7 +25,7 @@ import os
 
 from ..errors import DoNotIntercept
 from ..http import MITMRequest, MITMResponse
-from ..services import BaseService
+from ..services.base_service import BaseService
 
 
 class WhitelistService(BaseService):

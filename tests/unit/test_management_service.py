@@ -22,22 +22,25 @@
 
 """Tests for the ManagementService"""
 
+import json
 from os import environ
 
 from mock import patch
 from pytest import fixture, mark, raises
 
-from inspire_mitmproxy.errors import InvalidRequest
+from inspire_mitmproxy.errors import InvalidRequest, InvalidServiceParams, InvalidServiceType
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
-from inspire_mitmproxy.services import BaseService, ManagementService
+from inspire_mitmproxy.service_list import ServiceList
+from inspire_mitmproxy.services.base_service import BaseService
+from inspire_mitmproxy.services.management_service import ManagementService
 
 
 @fixture(scope='function')
 def management_service() -> ManagementService:
     mgmt_service = ManagementService(
-        [
+        ServiceList([
             BaseService(name='TestService', hosts_list=['test-service.local']),
-        ]
+        ])
     )
 
     mgmt_service.config = {
@@ -74,17 +77,109 @@ def fake_scenarios_dir(tmpdir) -> str:
 def test_management_service_get_services(management_service):
     result = management_service.get_services()
     expected = {
-        0: {
-            'class': 'ManagementService',
-            'hosts_list': ['mitm-manager.local']
-        },
-        1: {
-            'class': 'TestService',
-            'hosts_list': ['test-service.local']
-        }
+        'services': [
+            {
+                'type': 'BaseService',
+                'name': 'TestService',
+                'hosts_list': ['test-service.local']
+            }
+        ]
     }
 
     assert expected == result
+
+
+def test_management_service_set_services(management_service):
+    service_update = MITMRequest(
+        method='PUT',
+        url='http://mitm-manager.local',
+        body=json.dumps({
+            'services': [
+                {
+                    'type': 'BaseService',
+                    'name': 'UpdatedService',
+                    'hosts_list': ['new_domain.local'],
+                },
+                {
+                    'type': 'WhitelistService',
+                    'name': 'Whitelist',
+                    'hosts_list': ['pass_through.local']
+                }
+            ]
+        })
+    )
+
+    expected = {
+        'services': [
+            {
+                'type': 'ManagementService',
+                'name': 'ManagementService',
+                'hosts_list': ['mitm-manager.local'],
+            },
+            {
+                'type': 'BaseService',
+                'name': 'UpdatedService',
+                'hosts_list': ['new_domain.local'],
+            },
+            {
+                'type': 'WhitelistService',
+                'name': 'Whitelist',
+                'hosts_list': ['pass_through.local']
+            }
+        ]
+    }
+
+    result = management_service.set_services(service_update)
+
+    assert expected == result
+
+
+def test_management_service_set_services_raises_invalid_service_type(management_service):
+    service_update = MITMRequest(
+        method='PUT',
+        url='http://mitm-manager.local',
+        body=json.dumps({
+            'services': [
+                {
+                    'type': 'There is no such service type',
+                    'name': 'UpdatedService',
+                    'hosts_list': ['new_domain.local'],
+                }
+            ]
+        })
+    )
+
+    with raises(InvalidServiceType):
+        management_service.set_services(service_update)
+
+
+def test_management_service_set_services_raises_invalid_service_params(management_service):
+    service_update = MITMRequest(
+        method='PUT',
+        url='http://mitm-manager.local',
+        body=json.dumps({
+            'services': [
+                {
+                    'type': 'BaseService',
+                    'there is no such param': 42,
+                }
+            ]
+        })
+    )
+
+    with raises(InvalidServiceParams):
+        management_service.set_services(service_update)
+
+
+def test_management_service_set_services_raises_invalid_request(management_service):
+    service_update = MITMRequest(
+        method='PUT',
+        url='http://mitm-manager.local',
+        body='not valid json'
+    )
+
+    with raises(InvalidRequest):
+        management_service.set_services(service_update)
 
 
 def test_management_service_get_scenarios(fake_scenarios_dir, management_service):

@@ -31,7 +31,7 @@ from pytest import fixture, mark, raises
 
 from inspire_mitmproxy.errors import NoMatchingRecording, ScenarioNotInService
 from inspire_mitmproxy.http import MITMHeaders, MITMRequest, MITMResponse
-from inspire_mitmproxy.services import BaseService
+from inspire_mitmproxy.services.base_service import BaseService
 
 
 @fixture(scope='function')

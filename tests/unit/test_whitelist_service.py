@@ -26,7 +26,7 @@ import os
 
 from mock import patch
 
-from inspire_mitmproxy.services import WhitelistService
+from inspire_mitmproxy.services.whitelist_service import WhitelistService
 
 
 def test_load_services_from_os():
