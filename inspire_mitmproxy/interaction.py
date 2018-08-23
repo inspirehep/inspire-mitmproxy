@@ -36,7 +36,6 @@ match one of the services defined in :attr:`inspire_mitmproxy.services`. Name of
 can be anything, and is only for informative purposes. When recorded automatically, interactions
 are named in sequence of `interaction_0.yaml`, `interaction_1.yaml`, and so on.
 """
-
 from functools import singledispatch
 from logging import getLogger
 from os.path import expandvars
@@ -89,12 +88,14 @@ class Interaction:
         response: MITMResponse,
         match: Optional[dict] = None,
         callbacks: Optional[List[dict]] = None,
+        max_replays: Optional[int] = None,
     ) -> None:
         self.name = name
         self.request = request
         self.response = response
         self.match = match or {}
         self.callbacks = callbacks or []
+        self.max_replays = max_replays or -1
 
     @classmethod
     def from_file(cls, interaction_file: Optional[Path]) -> 'Interaction':
@@ -107,6 +108,7 @@ class Interaction:
             response=MITMResponse.from_dict(interaction_dict['response']),
             match=interaction_dict.get('match'),
             callbacks=interaction_dict.get('callbacks'),
+            max_replays=interaction_dict.get('max_replays')
         )
 
     def to_dict(self) -> dict:
@@ -115,6 +117,7 @@ class Interaction:
             'response': self.response.to_dict(),
             'match': self.match,
             'callbacks': self.callbacks,
+            'max_replays': self.max_replays,
         }
 
         return serialized_interaction

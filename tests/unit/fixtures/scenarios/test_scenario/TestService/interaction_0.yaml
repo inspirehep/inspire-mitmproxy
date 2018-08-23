@@ -12,3 +12,4 @@ response:
   headers:
     content-type: [application/json; charset=UTF-8]
   status: {code: 200, message: OK}
+max_replays: -1
