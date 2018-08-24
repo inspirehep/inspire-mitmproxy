@@ -116,6 +116,36 @@ def test_base_service_process_request_test_scenario_replays_ok(dispatcher):
     assert response_service_2.body == b'test_scenario_replays_ok/TestServiceB/0'
 
 
+def test_base_service_process_request_picks_next_interaction_after_reaches_max_replays(dispatcher):
+    request_set_config = MITMRequest(
+        method='POST',
+        url='http://mitm-manager.local/config',
+        body='{"active_scenario": "test_scenario_replays_once_and_takes_next"}',
+        headers=MITMHeaders({
+            'Host': ['mitm-manager.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    same_request = MITMRequest(
+        method='GET',
+        url='https://host_a.local/api',
+        headers=MITMHeaders({
+            'Host': ['host_a.local'],
+            'Accept': ['application/json'],
+        })
+    )
+
+    response_set_config = dispatcher.process_request(request_set_config)
+    assert response_set_config.status_code == 201
+
+    response_1 = dispatcher.process_request(same_request)
+    assert response_1.body == b'test_scenario_replays_ok/TestServiceA/0'
+
+    response_2 = dispatcher.process_request(same_request)
+    assert response_2.body == b'test_scenario_replays_ok/TestServiceA/1'
+
+
 def test_base_service_process_request_scenario_raise_if_no_interaction(dispatcher):
     request_set_config = MITMRequest(
         method='POST',
@@ -283,6 +313,7 @@ def test_base_service_process_response_record_create_interaction_dir_if_does_not
         },
         'match': {},
         'callbacks': [],
+        'max_replays': -1,
     }
 
     request_set_scenario = MITMRequest(
@@ -367,6 +398,7 @@ def test_base_service_process_response_record_when_empty_interactions_dir_exists
         },
         'match': {},
         'callbacks': [],
+        'max_replays': -1,
     }
 
     request_set_scenario = MITMRequest(
@@ -449,6 +481,7 @@ def test_base_service_process_response_record_when_dir_exists_and_has_some_inter
         },
         'match': {},
         'callbacks': [],
+        'max_replays': -1,
     }
 
     request_set_scenario = MITMRequest(

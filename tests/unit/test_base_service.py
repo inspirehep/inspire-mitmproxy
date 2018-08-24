@@ -401,3 +401,49 @@ def test_set_scenario_resets_interaction_count(service: BaseService):
     result = service.interactions_replayed
 
     assert expected == result
+
+
+def test_should_not_replay(service: BaseService, scenarios_dir):
+    interaction = service.get_interactions_for_active_scenario()[0]
+    interaction.max_replays = 0
+    assert not service.should_replay(interaction)
+
+
+def test_should_replay_only_once(service: BaseService, scenarios_dir):
+    interaction = service.get_interactions_for_active_scenario()[0]
+    interaction.max_replays = 1
+    assert service.should_replay(interaction)
+
+    request_1 = MITMRequest(
+        headers=MITMHeaders({
+            'Accept': ['application/json'],
+            'Accept-Encoding': ['gzip, deflate'],
+            'Connection': ['keep-alive'],
+            'User-Agent': ['python-requests/2.18.4']
+        }),
+        method='GET',
+        url='https://host_a.local/api',
+    )
+    service.process_request(request_1)
+    assert not service.should_replay(interaction)
+
+
+def test_should_always_replay(service: BaseService, scenarios_dir):
+    interaction = service.get_interactions_for_active_scenario()[0]
+    assert interaction.max_replays == -1
+    assert service.should_replay(interaction)
+
+    request_1 = MITMRequest(
+        headers=MITMHeaders({
+            'Accept': ['application/json'],
+            'Accept-Encoding': ['gzip, deflate'],
+            'Connection': ['keep-alive'],
+            'User-Agent': ['python-requests/2.18.4']
+        }),
+        method='GET',
+        url='https://host_a.local/api',
+    )
+
+    for i in range(10):
+        assert service.should_replay(interaction)
+        service.process_request(request_1)

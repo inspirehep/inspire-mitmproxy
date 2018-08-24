@@ -55,9 +55,14 @@ class BaseService:
 
         return host in self.hosts_list
 
-    def _get_first_matching_interaction(self, request):
+    def should_replay(self, interaction: Interaction) -> bool:
+        if interaction.max_replays < 0:
+            return True
+        return interaction.max_replays > self.get_interaction_replays_count(interaction.name)
+
+    def _get_matching_interaction(self, request):
         for interaction in self.get_interactions_for_active_scenario():
-            if interaction.matches_request(request):
+            if interaction.matches_request(request) and self.should_replay(interaction):
                 return interaction
 
     def _raise_do_not_intercept_if_recording(self, request):
@@ -66,14 +71,18 @@ class BaseService:
 
     def process_request(self, request):
         try:
-            matched_interaction = self._get_first_matching_interaction(request)
+            matched_interaction = self._get_matching_interaction(request)
         except ScenarioNotInService:
             self._raise_do_not_intercept_if_recording(request)
             raise
 
         if matched_interaction is None:
             self._raise_do_not_intercept_if_recording(request)
-            raise NoMatchingRecording(self.name, request)
+            raise NoMatchingRecording(
+                self.name,
+                request,
+                reason="Interaction not found or `max_replays` exceeded."
+            )
 
         response = matched_interaction.response
         matched_interaction.execute_callbacks()
@@ -104,6 +113,12 @@ class BaseService:
                 interaction_name,
                 {'num_calls': 1},
             )
+
+    def get_interaction_replays_count(self, interaction_name: str) -> int:
+        try:
+            return self.interactions_replayed[self.active_scenario][interaction_name]['num_calls']
+        except KeyError:
+            return 0
 
     def get_path_for_active_scenario_dir(self, create=False) -> Path:
         scenarios_path = Path(environ.get('SCENARIOS_PATH', './scenarios/'))

@@ -210,7 +210,8 @@ def test_interaction_to_dict(interaction_all_fields: Interaction):
                     'method': 'GET',
                 },
             },
-        ]
+        ],
+        'max_replays': -1
     }
 
     result = interaction_all_fields.to_dict()

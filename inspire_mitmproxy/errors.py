@@ -22,6 +22,8 @@
 
 """INSPIRE-MITMProxy Errors"""
 
+from typing import Optional
+
 from .http import MITMRequest
 
 
@@ -64,9 +66,12 @@ class DoNotIntercept(Exception):
 
 
 class NoMatchingRecording(MITMProxyHTTPError):
-    def __init__(self, service_name: str, request: MITMRequest) -> None:
+    def __init__(self, service_name: str, request: MITMRequest, reason: Optional[str]) \
+            -> None:
         self.http_status_code = 501
-        message = f"Service {service_name} cannot handle this request: {request}"
+        message = f"Service {service_name} cannot handle this request: {request}."
+        if reason:
+            message.join(f" Reason: {reason}")
         super().__init__(message)
 
 
