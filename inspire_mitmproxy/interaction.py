@@ -88,14 +88,14 @@ class Interaction:
         response: MITMResponse,
         match: Optional[dict] = None,
         callbacks: Optional[List[dict]] = None,
-        max_replays: Optional[int] = None,
+        max_replays: Optional[int] = -1,
     ) -> None:
         self.name = name
         self.request = request
         self.response = response
         self.match = match or {}
         self.callbacks = callbacks or []
-        self.max_replays = max_replays or -1
+        self.max_replays = max_replays if max_replays is not None else -1
 
     @classmethod
     def from_file(cls, interaction_file: Optional[Path]) -> 'Interaction':
